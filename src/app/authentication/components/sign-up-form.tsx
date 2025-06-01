@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -56,10 +57,14 @@ export default function SingUpForm() {
       },
       {
         onSuccess: () => {
+          toast.success("Conta criada com sucesso");
           router.push("/dashboard");
         },
-        onError: (error) => {
-          console.error(error);
+        onError: (ctx) => {
+          if (ctx.error.code === "USER_ALREADY_EXISTS") {
+            toast.error("Usuário já existe");
+            return;
+          }
         },
       }
     );
