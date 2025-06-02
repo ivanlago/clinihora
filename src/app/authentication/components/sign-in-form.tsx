@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -63,6 +64,14 @@ export default function SingInForm() {
       }
     );
   }
+
+  const handleGoogleLogin = async () => {
+    await authClient.signIn.social({
+      provider: "google",
+      callbackURL: "/dashboard",
+    });
+  };
+
   return (
     <Card>
       <Form {...form}>
@@ -104,7 +113,7 @@ export default function SingInForm() {
               )}
             />
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex flex-col gap-2">
             <Button
               type="submit"
               className="w-full"
@@ -114,6 +123,16 @@ export default function SingInForm() {
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               )}
               Entrar
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleGoogleLogin}
+            >
+              <Image src="/google.png" alt="Google" width={20} height={20} />
+              {/* <Google className="w-4 h-4 mr-2" /> */}
+              Entrar com Google
             </Button>
           </CardFooter>
         </form>
