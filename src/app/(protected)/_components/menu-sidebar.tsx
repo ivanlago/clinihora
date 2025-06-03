@@ -9,10 +9,9 @@ import {
   UsersRound,
 } from "lucide-react";
 import Image from "next/image";
-import { redirect } from "next/navigation";
+import { redirect, usePathname } from "next/navigation";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,6 +65,8 @@ const others = [
 
 export function MenuSidebar() {
   const session = authClient.useSession();
+  const pathname = usePathname();
+
   const handleSignout = async () => {
     await authClient.signOut();
     redirect("/authentication");
@@ -83,7 +84,11 @@ export function MenuSidebar() {
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.url}
+                    variant={pathname === item.url ? "default" : "outline"}
+                  >
                     <a href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
