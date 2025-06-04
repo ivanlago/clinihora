@@ -31,11 +31,16 @@ export const auth = betterAuth({
         },
       });
 
-      const clinic = clinics[0]; // esse código limita a 1 clinica por usuário
+      const clinic = clinics?.[0]; // esse código limita a 1 clinica por usuário
       return {
         user: {
           ...user,
-          ...clinic,
+          clinic: clinic.clinicId
+            ? {
+                id: clinic?.clinicId,
+                name: clinic?.clinic?.name,
+              }
+            : undefined,
           // clinics: clinics.map((cinic) => cinic.clinicId),  <= código para varias clínicas por usuário
         },
         session,

@@ -125,8 +125,7 @@ export const doctorsTable = pgTable("doctors", {
     .notNull()
     .references(() => clinicsTable.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
-  speciality: text("speciality").notNull(),
-  regNumber: text("reg_number").notNull(),
+  specialty: text("specialty").notNull(),
   avatarImageUrl: text("avatar_image_url"),
   appointmentPriceInCents: integer("appointment_price_in_cents").notNull(),
   availableDays: jsonb("available_days"),
