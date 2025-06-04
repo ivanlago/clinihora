@@ -3,12 +3,25 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 // import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { useAction } from "next-safe-action/hooks";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { NumericFormat } from "react-number-format";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { deleteDoctor } from "@/actions/delete-doctor";
 import { upsertDoctor } from "@/actions/upsert-doctor";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 // import { createDoctor } from "@/actions/create-doctor";
 import {
@@ -36,6 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { doctorsTable } from "@/db/schema";
 
 import { medicalSpecialties } from "../_constants";
 
@@ -74,27 +88,32 @@ const doctorSchema = z
   );
 
 interface DoctorFormProps {
+  doctor: typeof doctorsTable.$inferSelect;
   onSuccess?: () => void;
 }
 
-export default function DoctorForm({ onSuccess }: DoctorFormProps) {
+export default function DoctorForm({ doctor, onSuccess }: DoctorFormProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
   const form = useForm<z.infer<typeof doctorSchema>>({
+    shouldUnregister: true,
     resolver: zodResolver(doctorSchema),
     defaultValues: {
-      name: "",
-      specialty: "",
-      appointmentPriceInCents: 0,
-      availableFromWeekDay: "1",
-      availableToWeekDay: "5",
-      availableFromTime: "",
-      availableToTime: "",
+      name: doctor?.name ?? "",
+      specialty: doctor?.specialty ?? "",
+      appointmentPriceInCents: doctor?.appointmentPriceInCents
+        ? doctor.appointmentPriceInCents / 100
+        : 0,
+      availableFromWeekDay: doctor?.availableFromWeekDay.toString() ?? "1",
+      availableToWeekDay: doctor?.availableToWeekDay.toString() ?? "5",
+      availableFromTime: doctor?.availableFromTime ?? "",
+      availableToTime: doctor?.availableToTime ?? "",
     },
   });
 
   const upsertDoctorAction = useAction(upsertDoctor, {
     onSuccess: () => {
       form.reset();
-      toast.success("Médico criado com sucesso");
+      toast.success("Médico salvo com sucesso");
       onSuccess?.();
     },
     onError: () => {
@@ -105,19 +124,35 @@ export default function DoctorForm({ onSuccess }: DoctorFormProps) {
   async function onSubmit(values: z.infer<typeof doctorSchema>) {
     upsertDoctorAction.execute({
       ...values,
+      id: doctor?.id,
       appointmentPriceInCents: values.appointmentPriceInCents * 100,
       availableFromWeekDay: parseInt(values.availableFromWeekDay),
       availableToWeekDay: parseInt(values.availableToWeekDay),
     });
   }
 
+  async function handleDeleteDoctor() {
+    try {
+      setIsDeleting(true);
+      await deleteDoctor(doctor?.id);
+      toast.success("Médico deletado com sucesso");
+      setIsDeleting(false);
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao deletar médico");
+      setIsDeleting(false);
+    }
+  }
+
   return (
     <div>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Adicionar médico</DialogTitle>
+          <DialogTitle>
+            {doctor ? "Editar médico" : "Adicionar médico"}
+          </DialogTitle>
           <DialogDescription>
-            Adicione uma clínica para continuar
+            {doctor ? "Edite as informações do médico" : "Adicione um médico"}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -389,11 +424,41 @@ export default function DoctorForm({ onSuccess }: DoctorFormProps) {
             />
 
             <DialogFooter className="sm:justify-end">
+              {doctor && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive">Deletar médico</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        Tem certeza que deseja deletar o médico?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta ação não pode ser revertida. Isso irá deletar o
+                        médico e todas as consultas agendadas.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteDoctor}
+                        disabled={isDeleting}
+                      >
+                        {isDeleting && (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        )}
+                        Deletar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
               <Button type="submit" disabled={upsertDoctorAction.isPending}>
                 {upsertDoctorAction.isPending && (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 )}
-                Adicionar médico
+                {doctor ? "Salvar alterações" : "Adicionar médico"}
               </Button>
             </DialogFooter>
           </form>
