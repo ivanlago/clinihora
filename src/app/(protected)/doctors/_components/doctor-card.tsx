@@ -69,14 +69,17 @@ export default function DoctorCard({ doctor }: DoctorCardProps) {
           <DialogTrigger asChild>
             <Button className="w-full">Ver detalhes</Button>
           </DialogTrigger>
-          <DoctorForm
-            doctor={{
-              ...doctor,
-              availableFromTime: availability.from.format("HH:mm:ss"),
-              availableToTime: availability.to.format("HH:mm:ss"),
-            }}
-            onSuccess={() => setIsDialogOpen(false)}
-          />
+          {isDialogOpen && (
+            <DoctorForm
+              key={`doctor-form-${doctor.id}-${isDialogOpen}`}
+              doctor={{
+                ...doctor,
+                availableFromTime: availability.from.format("HH:mm:ss"),
+                availableToTime: availability.to.format("HH:mm:ss"),
+              }}
+              onSuccess={() => setIsDialogOpen(false)}
+            />
+          )}
         </Dialog>
       </CardFooter>
     </Card>

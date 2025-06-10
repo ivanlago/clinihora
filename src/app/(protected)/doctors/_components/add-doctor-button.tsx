@@ -17,7 +17,12 @@ export default function AddDoctorButton() {
           Novo médico
         </Button>
       </DialogTrigger>
-      <DoctorForm onSuccess={() => setIsOpen(false)} />
+      {isOpen && (
+        <DoctorForm
+          key={`doctor-form-new-${isOpen}`}
+          onSuccess={() => setIsOpen(false)}
+        />
+      )}
     </Dialog>
   );
 }

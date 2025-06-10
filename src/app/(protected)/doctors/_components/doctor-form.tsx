@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 // import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { useAction } from "next-safe-action/hooks";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { NumericFormat } from "react-number-format";
 import { toast } from "sonner";
@@ -88,7 +88,7 @@ const doctorSchema = z
   );
 
 interface DoctorFormProps {
-  doctor: typeof doctorsTable.$inferSelect;
+  doctor?: typeof doctorsTable.$inferSelect;
   onSuccess?: () => void;
 }
 
@@ -103,12 +103,27 @@ export default function DoctorForm({ doctor, onSuccess }: DoctorFormProps) {
       appointmentPriceInCents: doctor?.appointmentPriceInCents
         ? doctor.appointmentPriceInCents / 100
         : 0,
-      availableFromWeekDay: doctor?.availableFromWeekDay.toString() ?? "1",
-      availableToWeekDay: doctor?.availableToWeekDay.toString() ?? "5",
+      availableFromWeekDay: doctor?.availableFromWeekDay?.toString() ?? "1",
+      availableToWeekDay: doctor?.availableToWeekDay?.toString() ?? "5",
       availableFromTime: doctor?.availableFromTime ?? "",
       availableToTime: doctor?.availableToTime ?? "",
     },
   });
+
+  // Reset form when doctor prop changes
+  useEffect(() => {
+    form.reset({
+      name: doctor?.name ?? "",
+      specialty: doctor?.specialty ?? "",
+      appointmentPriceInCents: doctor?.appointmentPriceInCents
+        ? doctor.appointmentPriceInCents / 100
+        : 0,
+      availableFromWeekDay: doctor?.availableFromWeekDay?.toString() ?? "1",
+      availableToWeekDay: doctor?.availableToWeekDay?.toString() ?? "5",
+      availableFromTime: doctor?.availableFromTime ?? "",
+      availableToTime: doctor?.availableToTime ?? "",
+    });
+  }, [doctor, form]);
 
   const upsertDoctorAction = useAction(upsertDoctor, {
     onSuccess: () => {
@@ -134,7 +149,7 @@ export default function DoctorForm({ doctor, onSuccess }: DoctorFormProps) {
   async function handleDeleteDoctor() {
     try {
       setIsDeleting(true);
-      await deleteDoctor(doctor?.id);
+      await deleteDoctor(doctor?.id ?? "");
       toast.success("Médico deletado com sucesso");
       setIsDeleting(false);
     } catch (error) {
