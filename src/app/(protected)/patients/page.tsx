@@ -11,13 +11,15 @@ import {
   PageHeaderContent,
   PageTitle,
 } from "@/components/page-container";
+import { DataTable } from "@/components/ui/data-table";
 import { db } from "@/db";
 import { patientsTable } from "@/db/schema";
 import { auth } from "@/lib/auth";
 
 import { AddPatientButton } from "./_components/add-patient-button";
-import { PatientCard } from "./_components/patient-card";
+// import { PatientCard } from "./_components/patient-card";
 import { PatientFilters } from "./_components/patient-filters";
+import { patientsTableColumns } from "./_components/table-columns";
 
 interface PatientsPageProps {
   searchParams: { search?: string; sex?: "male" | "female" | "all" };
@@ -88,7 +90,8 @@ export default async function PatientsPage({
       <PageContent>
         <div className="space-y-4">
           <PatientFilters />
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <DataTable columns={patientsTableColumns} data={patients} />
+          {/* <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {patients.map((patient) => (
               <PatientCard key={patient.id} patient={patient} />
             ))}
@@ -97,7 +100,7 @@ export default async function PatientsPage({
                 Nenhum paciente encontrado
               </div>
             )}
-          </div>
+          </div> */}
         </div>
       </PageContent>
     </PageContainer>
