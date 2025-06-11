@@ -3,7 +3,7 @@ import { Loader2 } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { NumericFormat } from "react-number-format";
+import { PatternFormat } from "react-number-format";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -175,7 +175,7 @@ export function PatientForm({ defaultValues, onSuccess }: PatientFormProps) {
               <FormItem>
                 <FormLabel>Telefone</FormLabel>
                 <FormControl>
-                  <NumericFormat
+                  <PatternFormat
                     customInput={Input}
                     format="(##) #####-####"
                     mask="_"

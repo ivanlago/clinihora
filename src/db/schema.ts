@@ -191,7 +191,7 @@ export const appointmentsTable = pgTable("appointments", {
     .notNull()
     .references(() => clinicsTable.id, { onDelete: "cascade" }),
   date: timestamp("date").notNull(),
-  // status: appointmentStatusEnum("status").notNull(),
+  appointmentPriceInCents: integer("appointment_price_in_cents").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()

@@ -22,7 +22,7 @@ import { PatientFilters } from "./_components/patient-filters";
 import { patientsTableColumns } from "./_components/table-columns";
 
 interface PatientsPageProps {
-  searchParams: { search?: string; sex?: "male" | "female" | "all" };
+  searchParams: Promise<{ search?: string; sex?: "male" | "female" | "all" }>;
 }
 
 export default async function PatientsPage({
@@ -40,27 +40,21 @@ export default async function PatientsPage({
     redirect("/add-clinic");
   }
 
+  // Await searchParams before using them
+  const { search, sex } = await searchParams;
+
   // Base condition that's always present
   const baseCondition = eq(patientsTable.clinicId, session.user.clinic.id);
 
   // Additional conditions
-  const searchCondition = searchParams.search
+  const searchCondition = search
     ? or(
-        like(
-          sql`lower(${patientsTable.name})`,
-          `%${searchParams.search.toLowerCase()}%`
-        ),
-        like(
-          sql`lower(${patientsTable.email})`,
-          `%${searchParams.search.toLowerCase()}%`
-        )
+        like(sql`lower(${patientsTable.name})`, `%${search.toLowerCase()}%`),
+        like(sql`lower(${patientsTable.email})`, `%${search.toLowerCase()}%`)
       )
     : null;
 
-  const sexCondition =
-    searchParams.sex && searchParams.sex !== "all"
-      ? eq(patientsTable.sex, searchParams.sex)
-      : null;
+  const sexCondition = sex && sex !== "all" ? eq(patientsTable.sex, sex) : null;
 
   // Combine conditions
   const whereCondition = [baseCondition, searchCondition, sexCondition]
