@@ -1,14 +1,17 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 // import { CalendarIcon } from "@radix-ui/react-icons";
 import { format, setHours, setMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import dayjs from "dayjs";
 import { CalendarIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { NumericFormat } from "react-number-format";
 import { z } from "zod";
 
+import { getAvailableTimes } from "@/actions/get-available-times";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -34,14 +37,6 @@ import {
 import { cn } from "@/lib/utils";
 
 import { Doctor, Patient } from "../types";
-
-const timeSlots = Array.from({ length: 11 }, (_, i) => {
-  const hour = i + 8; // From 8:00 to 18:00
-  return {
-    value: `${hour.toString().padStart(2, "0")}:00`,
-    label: `${hour.toString().padStart(2, "0")}:00`,
-  };
-});
 
 const appointmentFormSchema = z.object({
   id: z.string().uuid().optional(),
@@ -85,6 +80,16 @@ export function AppointmentForm({
 
   const selectedDoctorId = form.watch("doctorId");
   const selectedDate = form.watch("date");
+
+  const { data: availableTimes } = useQuery({
+    queryKey: ["available-times", selectedDate, selectedDoctorId],
+    queryFn: () =>
+      getAvailableTimes({
+        date: dayjs(selectedDate).format("YYYY-MM-DD"),
+        doctorId: selectedDoctorId,
+      }),
+    enabled: !!selectedDate && !!selectedDoctorId,
+  });
 
   const handleSubmit = (values: AppointmentFormValues) => {
     // Combine date and time into a single datetime
@@ -250,9 +255,9 @@ export function AppointmentForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {timeSlots.map((slot) => (
-                      <SelectItem key={slot.value} value={slot.value}>
-                        {slot.label}
+                    {availableTimes?.data?.map((time) => (
+                      <SelectItem key={time.value} value={time.value}>
+                        {time.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
