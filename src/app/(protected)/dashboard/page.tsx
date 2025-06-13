@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { and, count, eq, gte, lte, sum } from "drizzle-orm";
+import { and, count, eq, gte, lte, sql, sum } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -16,6 +16,8 @@ import { db } from "@/db";
 import { appointmentsTable, doctorsTable, patientsTable } from "@/db/schema";
 import { auth } from "@/lib/auth";
 
+import AppointmentsChart from "./_components/appointments-chart";
+// import { AppointmentsChart } from "./_components/appointments-chart";
 import { DatePicker } from "./_components/date-picker";
 import StatsCards from "./_components/stats-card";
 
@@ -88,6 +90,29 @@ export default async function DashboardPage({
         .where(eq(doctorsTable.clinicId, session.user.clinic.id)),
     ]);
 
+  const chartStartDate = dayjs().subtract(10, "days").startOf("day").toDate();
+  const chartEndDate = dayjs().add(10, "days").endOf("day").toDate();
+
+  const dailyAppointmentsData = await db
+    .select({
+      date: sql<string>`DATE(${appointmentsTable.date})`.as("date"),
+      appointments: count(appointmentsTable.id),
+      revenue:
+        sql<number>`COALESCE(SUM(${appointmentsTable.appointmentPriceInCents}), 8)`.as(
+          "revenue"
+        ),
+    })
+    .from(appointmentsTable)
+    .where(
+      and(
+        eq(appointmentsTable.clinicId, session.user.clinic.id),
+        gte(appointmentsTable.date, chartStartDate),
+        lte(appointmentsTable.date, chartEndDate)
+      )
+    )
+    .groupBy(sql`DATE(${appointmentsTable.date})`)
+    .orderBy(sql`DATE(${appointmentsTable.date})`);
+
   return (
     <PageContainer>
       <PageHeader>
@@ -102,15 +127,15 @@ export default async function DashboardPage({
         </PageActions>
       </PageHeader>
       <PageContent>
-        <div className="space-y-4">
-          <StatsCards
-            totalRevenue={
-              totalRevenue.total ? Number(totalRevenue.total) : null
-            }
-            totalAppointments={totalAppointments.total}
-            totalPatients={totalPatients.total}
-            totalDoctors={totalDoctors.total}
-          />
+        <StatsCards
+          totalRevenue={totalRevenue.total ? Number(totalRevenue.total) : null}
+          totalAppointments={totalAppointments.total}
+          totalPatients={totalPatients.total}
+          totalDoctors={totalDoctors.total}
+        />
+        <div className="grid grid-cols-[2.25fr_1fr] gap-4">
+          <AppointmentsChart dailyAppointmentsData={dailyAppointmentsData} />
+          {/* <TopDoctors doctors={topDoctors} /> */}
         </div>
       </PageContent>
     </PageContainer>
