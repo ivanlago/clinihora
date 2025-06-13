@@ -85,16 +85,6 @@ export default async function PatientsPage({
         <div className="space-y-4">
           <PatientFilters />
           <DataTable columns={patientsTableColumns} data={patients} />
-          {/* <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {patients.map((patient) => (
-              <PatientCard key={patient.id} patient={patient} />
-            ))}
-            {patients.length === 0 && (
-              <div className="col-span-full text-center py-8 text-muted-foreground">
-                Nenhum paciente encontrado
-              </div>
-            )}
-          </div> */}
         </div>
       </PageContent>
     </PageContainer>

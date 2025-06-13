@@ -1,5 +1,6 @@
 "use client";
 
+import { LogOutIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ export default function DashboardSignOut() {
   return (
     <div>
       <Button
+        variant={"outline"}
         onClick={() =>
           authClient.signOut({
             fetchOptions: {
@@ -18,6 +20,7 @@ export default function DashboardSignOut() {
           })
         }
       >
+        <LogOutIcon />
         Sair
       </Button>
     </div>
