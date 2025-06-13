@@ -52,6 +52,7 @@ export const upsertPatient = actionClient
           .where(eq(patientsTable.id, parsedInput.id));
 
         revalidatePath("/patients");
+        revalidatePath("/dashboard");
         return { success: true };
       }
 
@@ -65,6 +66,7 @@ export const upsertPatient = actionClient
       });
 
       revalidatePath("/patients");
+      revalidatePath("/dashboard");
       return { success: true };
     } catch (error) {
       console.error("Error upserting patient:", error);

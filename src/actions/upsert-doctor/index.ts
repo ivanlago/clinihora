@@ -61,4 +61,5 @@ export const upsertDoctor = actionClient
         },
       });
     revalidatePath("/doctors");
+    revalidatePath("/dashboard");
   });

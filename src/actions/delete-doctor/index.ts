@@ -34,4 +34,5 @@ export const deleteDoctor = async (doctorId: string) => {
 
   await db.delete(doctorsTable).where(eq(doctorsTable.id, doctorId));
   revalidatePath("/doctors");
+  revalidatePath("/dashboard");
 };

@@ -38,5 +38,6 @@ export const createAppointment = actionClient
     });
 
     revalidatePath("/appointments");
+    revalidatePath("/dashboard");
     return { success: true };
   });

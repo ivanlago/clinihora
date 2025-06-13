@@ -57,6 +57,7 @@ export const upsertAppointment = actionClient
         .where(eq(appointmentsTable.id, parsedInput.id));
 
       revalidatePath("/appointments");
+      revalidatePath("/dashboard");
       return { success: true };
     }
 
@@ -70,5 +71,6 @@ export const upsertAppointment = actionClient
     });
 
     revalidatePath("/appointments");
+    revalidatePath("/dashboard");
     return { success: true };
   });
