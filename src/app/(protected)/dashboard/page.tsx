@@ -135,6 +135,25 @@ export default async function DashboardPage({
       .groupBy(doctorsTable.id)
       .orderBy(desc(count(appointmentsTable.id)))
       .limit(10),
+
+    db
+      .select({
+        specialty: doctorsTable.specialty,
+        appointments: count(appointmentsTable.id),
+      })
+      .from(appointmentsTable)
+      .innerJoin(doctorsTable, eq(doctorsTable.id, appointmentsTable.doctorId))
+      .where(
+        and(
+          gte(appointmentsTable.date, new Date(from)),
+          lte(appointmentsTable.date, new Date(to)),
+          eq(appointmentsTable.clinicId, session.user.clinic.id),
+          eq(doctorsTable.clinicId, session.user.clinic.id)
+        )
+      )
+      .groupBy(doctorsTable.specialty)
+      .orderBy(desc(count(appointmentsTable.id)))
+      .limit(10),
   ]);
 
   const chartStartDate = dayjs().subtract(10, "days").startOf("day").toDate();
