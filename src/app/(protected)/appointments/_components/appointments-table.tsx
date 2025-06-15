@@ -3,7 +3,7 @@
 import { DataTable } from "@/components/ui/data-table";
 
 import { AppointmentWithRelations, Doctor, Patient } from "../types";
-import { createAppointmentsTableColumns } from "./table-columns";
+import { appointmentsTableColumns } from "./table-columns";
 
 interface AppointmentsTableProps {
   appointments: AppointmentWithRelations[];
@@ -16,7 +16,7 @@ export function AppointmentsTable({
   patients,
   doctors,
 }: AppointmentsTableProps) {
-  const columns = createAppointmentsTableColumns({ patients, doctors });
+  const columns = appointmentsTableColumns({ patients, doctors });
 
   return <DataTable columns={columns} data={appointments} />;
 }

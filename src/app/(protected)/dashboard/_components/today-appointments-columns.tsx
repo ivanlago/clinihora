@@ -1,4 +1,5 @@
 "use client";
+
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -6,18 +7,9 @@ import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 
-import { AppointmentWithRelations } from "../types";
-import { AppointmentTableActions } from "./table-actions";
+import { AppointmentWithRelations } from "../../appointments/types";
 
-interface TableColumnsProps {
-  patients: AppointmentWithRelations["patient"][];
-  doctors: AppointmentWithRelations["doctor"][];
-}
-
-export const appointmentsTableColumns = ({
-  patients,
-  doctors,
-}: TableColumnsProps): ColumnDef<AppointmentWithRelations>[] => [
+export const todayAppointmentsColumns: ColumnDef<AppointmentWithRelations>[] = [
   {
     accessorKey: "patient.name",
     header: "Paciente",
@@ -59,19 +51,6 @@ export const appointmentsTableColumns = ({
       }
 
       return <Badge>Agendado</Badge>;
-    },
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => {
-      const appointment = row.original;
-      return (
-        <AppointmentTableActions
-          appointment={appointment}
-          patients={patients}
-          doctors={doctors}
-        />
-      );
     },
   },
 ];
