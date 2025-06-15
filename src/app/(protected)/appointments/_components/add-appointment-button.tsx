@@ -1,5 +1,6 @@
 "use client";
 
+import { PlusIcon } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -43,7 +44,9 @@ export function AddAppointmentButton({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Novo Agendamento</Button>
+        <Button>
+          <PlusIcon /> Novo Agendamento
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
