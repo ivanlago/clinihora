@@ -1,5 +1,7 @@
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
 import {
-  PageActions,
   PageContainer,
   PageContent,
   PageDescription,
@@ -7,10 +9,22 @@ import {
   PageHeaderContent,
   PageTitle,
 } from "@/components/page-container";
+import { auth } from "@/lib/auth";
 
 import { SubscriptionPlan } from "./_components/subscription-plan";
 
-export default function SubscriptionPage() {
+export default async function SubscriptionPage() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  if (!session.user.clinic) {
+    redirect("/add-clinic");
+  }
+
   return (
     <PageContainer>
       <PageHeader>
@@ -20,13 +34,14 @@ export default function SubscriptionPage() {
             Gerencie sua assinatura e planos de pagamento.
           </PageDescription>
         </PageHeaderContent>
-        <PageActions>
-          <h1>Button</h1>
-        </PageActions>
       </PageHeader>
       <PageContent>
         <div className="space-y-4">
-          <SubscriptionPlan className="w-[280px]" />
+          <SubscriptionPlan
+            className="w-[300px]"
+            active={session.user.plan === "essential"}
+            userEmail={session.user.email || ""}
+          />
         </div>
       </PageContent>
     </PageContainer>

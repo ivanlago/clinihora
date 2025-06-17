@@ -28,6 +28,7 @@ export const auth = betterAuth({
         where: eq(schema.usersToClinicsTable.userId, user.id),
         with: {
           clinic: true,
+          user: true,
         },
       });
 
@@ -35,7 +36,8 @@ export const auth = betterAuth({
       return {
         user: {
           ...user,
-          clinic: clinic.clinicId
+          plan: clinic?.user?.plan,
+          clinic: clinic?.clinicId
             ? {
                 id: clinic?.clinicId,
                 name: clinic?.clinic?.name,
@@ -47,4 +49,23 @@ export const auth = betterAuth({
       };
     }),
   ],
+  user: {
+    additionalFields: {
+      stripeCustomerId: {
+        type: "string",
+        fieldName: "stripeCustomerId",
+        required: false,
+      },
+      stripeSubscriptionId: {
+        type: "string",
+        fieldName: "stripeSubscriptionId",
+        required: false,
+      },
+      plan: {
+        type: "string",
+        fieldName: "plan",
+        required: false,
+      },
+    },
+  },
 });

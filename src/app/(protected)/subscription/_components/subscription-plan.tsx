@@ -97,6 +97,7 @@ export function SubscriptionPlan({
             className="w-full"
             variant="outline"
             onClick={active ? handleManagePlanClick : handleSubscribeClick}
+            // onClick={active ? () => {} : handleSubscribeClick}
             disabled={createStripeCheckoutAction.isExecuting}
           >
             {createStripeCheckoutAction.isExecuting ? (
@@ -106,7 +107,6 @@ export function SubscriptionPlan({
             ) : (
               "Fazer assinatura"
             )}
-            Fazer assinatura
           </Button>
         </div>
       </CardContent>
