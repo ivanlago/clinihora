@@ -2,7 +2,7 @@
 
 import {
   CalendarDays,
-  Diamond,
+  Gem,
   LayoutDashboard,
   LogOut,
   Stethoscope,
@@ -55,14 +55,6 @@ const items = [
   },
 ];
 
-const others = [
-  {
-    title: "Planos",
-    url: "/planos",
-    icon: Diamond,
-  },
-];
-
 export function MenuSidebar() {
   const session = authClient.useSession();
   const pathname = usePathname();
@@ -103,16 +95,14 @@ export function MenuSidebar() {
           <SidebarGroupLabel>Outros</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {others.map((other) => (
-                <SidebarMenuItem key={other.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={other.url}>
-                      <other.icon />
-                      <span>{other.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <a href="/subscription">
+                    <Gem />
+                    <span>Assinatura</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
