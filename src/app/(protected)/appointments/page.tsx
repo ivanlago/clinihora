@@ -27,6 +27,10 @@ export default async function AppointmentsPage() {
     redirect("/authentication");
   }
 
+  if (!session?.user?.plan) {
+    redirect("/new-subscription");
+  }
+
   if (!session?.user?.clinic) {
     redirect("/add-clinic");
   }

@@ -17,7 +17,6 @@ import { patientsTable } from "@/db/schema";
 import { auth } from "@/lib/auth";
 
 import { AddPatientButton } from "./_components/add-patient-button";
-// import { PatientCard } from "./_components/patient-card";
 import { PatientFilters } from "./_components/patient-filters";
 import { patientsTableColumns } from "./_components/table-columns";
 
@@ -34,6 +33,10 @@ export default async function PatientsPage({
 
   if (!session?.user) {
     redirect("/authentication");
+  }
+
+  if (!session?.user?.plan) {
+    redirect("/new-subscription");
   }
 
   if (!session?.user?.clinic) {

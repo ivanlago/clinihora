@@ -49,6 +49,10 @@ export default async function DashboardPage({
     redirect("/authentication");
   }
 
+  if (!session?.user?.plan) {
+    redirect("/new-subscription");
+  }
+
   if (!session?.user?.clinic) {
     redirect("/add-clinic");
   }
