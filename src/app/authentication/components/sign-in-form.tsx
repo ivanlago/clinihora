@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -135,6 +136,14 @@ export default function SingInForm() {
               Entrar com Google
             </Button>
           </CardFooter>
+          <div className="flex justify-end mx-6 mt-[-10px]">
+            <Link
+              href="/forgot-password"
+              className="text-blue-800 hover:underline"
+            >
+              Esqueci minha senha
+            </Link>
+          </div>
         </form>
       </Form>
     </Card>
