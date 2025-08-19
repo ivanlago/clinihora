@@ -9,21 +9,15 @@ dayjs.extend(utc);
 dayjs.locale("pt-br");
 
 export const getAvailability = (doctor: typeof doctorsTable.$inferSelect) => {
-  const from = dayjs()
-    .utc()
-    .day(doctor.availableFromWeekDay)
-    .set("hour", parseInt(doctor.availableFromTime.split(":")[0]))
-    .set("minute", parseInt(doctor.availableFromTime.split(":")[1]))
-    .set("second", parseInt(doctor.availableFromTime.split(":")[2]))
-    .local();
+  const days = (doctor.availableDays ?? []).map(day => ({
+    dayOfWeek: dayjs().day(day.dayOfWeek).locale("pt-br"),
+    from: dayjs().set('hour', parseInt(day.fromTime.split(':')[0]))
+                 .set('minute', parseInt(day.fromTime.split(':')[1]))
+                 .set('second', parseInt(day.fromTime.split(':')[2])),
+    to: dayjs().set('hour', parseInt(day.toTime.split(':')[0]))
+               .set('minute', parseInt(day.toTime.split(':')[1]))
+               .set('second', parseInt(day.toTime.split(':')[2])),
+  }));
 
-  const to = dayjs()
-    .utc()
-    .day(doctor.availableToWeekDay)
-    .set("hour", parseInt(doctor.availableToTime.split(":")[0]))
-    .set("minute", parseInt(doctor.availableToTime.split(":")[1]))
-    .set("second", parseInt(doctor.availableToTime.split(":")[2]))
-    .local();
-
-  return { from, to };
+  return days;
 };

@@ -41,10 +41,10 @@ export const getAvailableTimes = actionClient
       throw new Error("Médico não encontrado");
     }
     const selectedDayOfWeek = dayjs(parsedInput.date).day();
-    const doctorIsAvailable =
-      selectedDayOfWeek >= doctor.availableFromWeekDay &&
-      selectedDayOfWeek <= doctor.availableToWeekDay;
-    if (!doctorIsAvailable) {
+    const selectedDay = (doctor.availableDays ?? []).find(
+      (day) => day.dayOfWeek === selectedDayOfWeek
+    );
+    if (!selectedDay) {
       return [];
     }
     const appointments = await db.query.appointmentsTable.findMany({
@@ -57,29 +57,11 @@ export const getAvailableTimes = actionClient
       .map((appointment) => dayjs(appointment.date).format("HH:mm:ss"));
     const timeSlots = generateTimeSlots();
 
-    const doctorAvailableFrom = dayjs()
-      .utc()
-      .set("hour", Number(doctor.availableFromTime.split(":")[0]))
-      .set("minute", Number(doctor.availableFromTime.split(":")[1]))
-      .set("second", 0)
-      .local();
-    const doctorAvailableTo = dayjs()
-      .utc()
-      .set("hour", Number(doctor.availableToTime.split(":")[0]))
-      .set("minute", Number(doctor.availableToTime.split(":")[1]))
-      .set("second", 0)
-      .local();
-    const doctorTimeSlots = timeSlots.filter((time) => {
-      const date = dayjs()
-        .utc()
-        .set("hour", Number(time.split(":")[0]))
-        .set("minute", Number(time.split(":")[1]))
-        .set("second", 0);
+    const doctorAvailableFrom = selectedDay.fromTime;
+    const doctorAvailableTo = selectedDay.toTime;
 
-      return (
-        date.format("HH:mm:ss") >= doctorAvailableFrom.format("HH:mm:ss") &&
-        date.format("HH:mm:ss") <= doctorAvailableTo.format("HH:mm:ss")
-      );
+    const doctorTimeSlots = timeSlots.filter((time) => {
+      return time >= doctorAvailableFrom && time <= doctorAvailableTo;
     });
     return doctorTimeSlots.map((time) => {
       return {

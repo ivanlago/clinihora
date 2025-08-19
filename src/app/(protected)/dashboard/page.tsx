@@ -36,9 +36,12 @@ export default async function DashboardPage({
 }: DashboardPageProps) {
   const { from, to } = await searchParams;
   if (!from || !to) {
-    redirect(
-      `/dashboard?from=${dayjs().format("YYYY-MM-DD")}&to=${dayjs().add(1, "month").format("YYYY-MM-DD")}`
-    );
+    const startDate = dayjs()
+      .subtract(5, "months")
+      .startOf("month")
+      .format("YYYY-MM-DD");
+    const endDate = dayjs().endOf("month").format("YYYY-MM-DD");
+    redirect(`/dashboard?from=${startDate}&to=${endDate}`);
   }
 
   const session = await auth.api.getSession({

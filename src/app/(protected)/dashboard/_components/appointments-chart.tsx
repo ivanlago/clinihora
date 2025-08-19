@@ -30,20 +30,36 @@ interface AppointmentsChartProps {
 const AppointmentsChart = ({
   dailyAppointmentsData,
 }: AppointmentsChartProps) => {
-  // Gerar 21 dias: 10 antes + hoje + 10 depois
-  const chartDays = Array.from({ length: 21 }).map((_, i) =>
+  // Gerar 6 meses: 5 meses anteriores + mês atual
+  const chartMonths = Array.from({ length: 6 }).map((_, i) =>
     dayjs()
-      .subtract(10 - i, "days")
-      .format("YYYY-MM-DD")
+      .subtract(5 - i, "months")
+      .format("YYYY-MM")
   );
 
-  const chartData = chartDays.map((date) => {
-    const dataForDay = dailyAppointmentsData.find((item) => item.date === date);
+  // Agrupa os dados por mês
+  const monthlyData = dailyAppointmentsData.reduce(
+    (acc, curr) => {
+      const month = dayjs(curr.date).format("YYYY-MM");
+      if (!acc[month]) {
+        acc[month] = {
+          appointments: 0,
+          revenue: 0,
+        };
+      }
+      acc[month].appointments += curr.appointments;
+      acc[month].revenue += curr.revenue || 0;
+      return acc;
+    },
+    {} as Record<string, { appointments: number; revenue: number }>
+  );
+
+  const chartData = chartMonths.map((month) => {
     return {
-      date: dayjs(date).format("DD/MM"),
-      fullDate: date,
-      appointments: dataForDay?.appointments || 0,
-      revenue: Number(dataForDay?.revenue || 0),
+      date: dayjs(month).format("MMM/YYYY"),
+      fullDate: month,
+      appointments: monthlyData[month]?.appointments || 0,
+      revenue: monthlyData[month]?.revenue || 0,
     };
   });
 
@@ -120,8 +136,8 @@ const AppointmentsChart = ({
                   }}
                   labelFormatter={(label, payload) => {
                     if (payload && payload[0]) {
-                      return dayjs(payload[0].payload?.fullDate).format(
-                        "DD/MM/YYYY (dddd)"
+                      return dayjs(payload[0].payload?.fullDate + "-01").format(
+                        "MMMM [de] YYYY"
                       );
                     }
                     return label;

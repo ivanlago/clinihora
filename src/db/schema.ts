@@ -7,7 +7,6 @@ import {
   pgEnum,
   pgTable,
   text,
-  time,
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -131,11 +130,11 @@ export const doctorsTable = pgTable("doctors", {
   specialty: text("specialty").notNull(),
   avatarImageUrl: text("avatar_image_url"),
   appointmentPriceInCents: integer("appointment_price_in_cents").notNull(),
-  availableDays: jsonb("available_days"),
-  availableFromWeekDay: integer("available_from_week_day").notNull(),
-  availableToWeekDay: integer("available_to_week_day").notNull(),
-  availableFromTime: time("available_from_time").notNull(),
-  availableToTime: time("available_to_time").notNull(),
+  availableDays: jsonb("available_days").$type<Array<{
+    dayOfWeek: number;
+    fromTime: string;
+    toTime: string;
+  }>>().default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()

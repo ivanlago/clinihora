@@ -49,15 +49,23 @@ export default function DoctorCard({ doctor }: DoctorCardProps) {
       </CardHeader>
       <Separator />
       <CardContent className="flex flex-col gap-2">
-        <Badge variant="outline">
-          <Calendar1Icon className="mr-1" />
-          {availability.from.format("dddd")} a {availability.to.format("dddd")}
-        </Badge>
-        <Badge variant="outline">
-          <ClockIcon className="mr-1" />
-          {availability.from.format("HH:mm")} às{" "}
-          {availability.to.format("HH:mm")}
-        </Badge>
+        <div className="flex flex-col gap-2">
+          {availability.map((day) => (
+            <div
+              key={day.dayOfWeek.format("dddd")}
+              className="flex items-center gap-2"
+            >
+              <Badge variant="outline" className="w-24">
+                <Calendar1Icon className="mr-1" />
+                {day.dayOfWeek.format("dddd")}
+              </Badge>
+              <Badge variant="outline">
+                <ClockIcon className="mr-1" />
+                {day.from.format("HH:mm")} às {day.to.format("HH:mm")}
+              </Badge>
+            </div>
+          ))}
+        </div>
         <Badge variant="outline">
           <DollarSignIcon className="mr-1" />{" "}
           {formatCurrencyInCents(doctor.appointmentPriceInCents)}
@@ -72,11 +80,7 @@ export default function DoctorCard({ doctor }: DoctorCardProps) {
           {isDialogOpen && (
             <DoctorForm
               key={`doctor-form-${doctor.id}-${isDialogOpen}`}
-              doctor={{
-                ...doctor,
-                availableFromTime: availability.from.format("HH:mm:ss"),
-                availableToTime: availability.to.format("HH:mm:ss"),
-              }}
+              doctor={doctor}
               onSuccess={() => setIsDialogOpen(false)}
             />
           )}

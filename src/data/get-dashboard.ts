@@ -17,8 +17,8 @@ interface Params {
 }
 
 export const getDashboard = async ({ from, to, session }: Params) => {
-  const chartStartDate = dayjs().subtract(10, "days").startOf("day").toDate();
-  const chartEndDate = dayjs().add(10, "days").endOf("day").toDate();
+  const chartStartDate = dayjs().subtract(5, "months").startOf("month").toDate();
+  const chartEndDate = dayjs().endOf("month").toDate();
   const [
     [totalRevenue],
     [totalAppointments],
@@ -115,7 +115,7 @@ export const getDashboard = async ({ from, to, session }: Params) => {
     }),
     db
       .select({
-        date: sql<string>`DATE(${appointmentsTable.date})`.as("date"),
+        date: sql<string>`date_trunc('month', ${appointmentsTable.date})::text`.as("date"),
         appointments: count(appointmentsTable.id),
         revenue:
           sql<number>`COALESCE(SUM(${appointmentsTable.appointmentPriceInCents}), 0)`.as(
@@ -130,8 +130,8 @@ export const getDashboard = async ({ from, to, session }: Params) => {
           lte(appointmentsTable.date, chartEndDate)
         )
       )
-      .groupBy(sql`DATE(${appointmentsTable.date})`)
-      .orderBy(sql`DATE(${appointmentsTable.date})`),
+      .groupBy(sql`date_trunc('month', ${appointmentsTable.date})`)
+      .orderBy(sql`date_trunc('month', ${appointmentsTable.date})`),
   ]);
   return {
     totalRevenue,

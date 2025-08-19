@@ -111,8 +111,9 @@ export function AppointmentForm({
     if (!selectedDoctor) return false;
     const dayOfWeek = date.getDay();
     return (
-      dayOfWeek >= selectedDoctor?.availableFromWeekDay &&
-      dayOfWeek <= selectedDoctor?.availableToWeekDay
+      selectedDoctor.availableDays?.some(
+        (day) => day.dayOfWeek === dayOfWeek
+      ) ?? false
     );
   };
 

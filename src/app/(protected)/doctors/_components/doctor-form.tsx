@@ -1,5 +1,7 @@
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 import { Loader2 } from "lucide-react";
 // import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { useAction } from "next-safe-action/hooks";
@@ -11,6 +13,7 @@ import { z } from "zod";
 
 import { deleteDoctor } from "@/actions/delete-doctor";
 import { upsertDoctor } from "@/actions/upsert-doctor";
+import { upsertDoctorSchema } from "@/actions/upsert-doctor/schema";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +26,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+// import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@/components/ui/checkbox";
 // import { createDoctor } from "@/actions/create-doctor";
 import {
   DialogContent,
@@ -53,39 +58,7 @@ import { doctorsTable } from "@/db/schema";
 
 import { medicalSpecialties } from "../_constants";
 
-const doctorSchema = z
-  .object({
-    name: z.string().trim().min(1, { message: "O nome é obrigatório" }),
-    specialty: z
-      .string()
-      .trim()
-      .min(1, { message: "A especialidade é obrigatório" }),
-    appointmentPriceInCents: z
-      .number()
-      .min(1, { message: "O preço da consulta é obrigatório" }),
-    availableFromWeekDay: z
-      .string()
-      .min(1, { message: "O dia inicial da semana é obrigatório" }),
-    availableToWeekDay: z
-      .string()
-      .min(1, { message: "O dia final da semana é obrigatório" }),
-    availableFromTime: z
-      .string()
-      .min(1, { message: "A hora inicial do dia é obrigatório" }),
-    availableToTime: z
-      .string()
-      .min(1, { message: "A hora final do dia é obrigatório" }),
-  })
-  .refine(
-    (data) => {
-      return data.availableFromTime < data.availableToTime;
-    },
-    {
-      message:
-        "O horário final não pode ser anterior ou igual ao horário inicial",
-      path: ["availableToTime"],
-    }
-  );
+dayjs.extend(utc);
 
 interface DoctorFormProps {
   doctor?: typeof doctorsTable.$inferSelect;
@@ -94,19 +67,16 @@ interface DoctorFormProps {
 
 export default function DoctorForm({ doctor, onSuccess }: DoctorFormProps) {
   const [isDeleting, setIsDeleting] = useState(false);
-  const form = useForm<z.infer<typeof doctorSchema>>({
+  const form = useForm<z.infer<typeof upsertDoctorSchema>>({
     shouldUnregister: true,
-    resolver: zodResolver(doctorSchema),
+    resolver: zodResolver(upsertDoctorSchema),
     defaultValues: {
       name: doctor?.name ?? "",
       specialty: doctor?.specialty ?? "",
       appointmentPriceInCents: doctor?.appointmentPriceInCents
         ? doctor.appointmentPriceInCents / 100
         : 0,
-      availableFromWeekDay: doctor?.availableFromWeekDay?.toString() ?? "1",
-      availableToWeekDay: doctor?.availableToWeekDay?.toString() ?? "5",
-      availableFromTime: doctor?.availableFromTime ?? "",
-      availableToTime: doctor?.availableToTime ?? "",
+      availableDays: doctor?.availableDays ?? [],
     },
   });
 
@@ -118,10 +88,7 @@ export default function DoctorForm({ doctor, onSuccess }: DoctorFormProps) {
       appointmentPriceInCents: doctor?.appointmentPriceInCents
         ? doctor.appointmentPriceInCents / 100
         : 0,
-      availableFromWeekDay: doctor?.availableFromWeekDay?.toString() ?? "1",
-      availableToWeekDay: doctor?.availableToWeekDay?.toString() ?? "5",
-      availableFromTime: doctor?.availableFromTime ?? "",
-      availableToTime: doctor?.availableToTime ?? "",
+      availableDays: doctor?.availableDays ?? [],
     });
   }, [doctor, form]);
 
@@ -136,13 +103,11 @@ export default function DoctorForm({ doctor, onSuccess }: DoctorFormProps) {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof doctorSchema>) {
+  async function onSubmit(values: z.infer<typeof upsertDoctorSchema>) {
     upsertDoctorAction.execute({
       ...values,
       id: doctor?.id,
       appointmentPriceInCents: values.appointmentPriceInCents * 100,
-      availableFromWeekDay: parseInt(values.availableFromWeekDay),
-      availableToWeekDay: parseInt(values.availableToWeekDay),
     });
   }
 
@@ -242,199 +207,194 @@ export default function DoctorForm({ doctor, onSuccess }: DoctorFormProps) {
 
             <FormField
               control={form.control}
-              name="availableFromWeekDay"
+              name="availableDays"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Dia inicial de disponibilidade</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Selecione um dia" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="0">Domingo</SelectItem>
-                      <SelectItem value="1">Segunda</SelectItem>
-                      <SelectItem value="2">Terça</SelectItem>
-                      <SelectItem value="3">Quarta</SelectItem>
-                      <SelectItem value="4">Quinta</SelectItem>
-                      <SelectItem value="5">Sexta</SelectItem>
-                      <SelectItem value="6">Sábado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="availableToWeekDay"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Dia final de disponibilidade</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Selecione um dia" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="0">Domingo</SelectItem>
-                      <SelectItem value="1">Segunda</SelectItem>
-                      <SelectItem value="2">Terça</SelectItem>
-                      <SelectItem value="3">Quarta</SelectItem>
-                      <SelectItem value="4">Quinta</SelectItem>
-                      <SelectItem value="5">Sexta</SelectItem>
-                      <SelectItem value="6">Sábado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <div className="space-y-4">
+                  <FormLabel>Disponibilidade por dia da semana</FormLabel>
+                  <div className="grid gap-4">
+                    {[
+                      { value: 0, label: "Domingo" },
+                      { value: 1, label: "Segunda" },
+                      { value: 2, label: "Terça" },
+                      { value: 3, label: "Quarta" },
+                      { value: 4, label: "Quinta" },
+                      { value: 5, label: "Sexta" },
+                      { value: 6, label: "Sábado" },
+                    ].map((day) => {
+                      const dayConfig = field.value?.find(
+                        (d) => d.dayOfWeek === day.value
+                      );
 
-            <FormField
-              control={form.control}
-              name="availableFromTime"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Horário inicial de disponibilidade</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Selecione um horário" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>Manhã</SelectLabel>
-                        <SelectItem value="05:00:00">05:00</SelectItem>
-                        <SelectItem value="05:30:00">05:30</SelectItem>
-                        <SelectItem value="06:00:00">06:00</SelectItem>
-                        <SelectItem value="06:30:00">06:30</SelectItem>
-                        <SelectItem value="07:00:00">07:00</SelectItem>
-                        <SelectItem value="07:30:00">07:30</SelectItem>
-                        <SelectItem value="08:00:00">08:00</SelectItem>
-                        <SelectItem value="08:30:00">08:30</SelectItem>
-                        <SelectItem value="09:00:00">09:00</SelectItem>
-                        <SelectItem value="09:30:00">09:30</SelectItem>
-                        <SelectItem value="10:00:00">10:00</SelectItem>
-                        <SelectItem value="10:30:00">10:30</SelectItem>
-                        <SelectItem value="11:00:00">11:00</SelectItem>
-                        <SelectItem value="11:30:00">11:30</SelectItem>
-                        <SelectItem value="12:00:00">12:00</SelectItem>
-                        <SelectItem value="12:30:00">12:30</SelectItem>
-                      </SelectGroup>
-                      <SelectGroup>
-                        <SelectLabel>Tarde</SelectLabel>
-                        <SelectItem value="13:00:00">13:00</SelectItem>
-                        <SelectItem value="13:30:00">13:30</SelectItem>
-                        <SelectItem value="14:00:00">14:00</SelectItem>
-                        <SelectItem value="14:30:00">14:30</SelectItem>
-                        <SelectItem value="15:00:00">15:00</SelectItem>
-                        <SelectItem value="15:30:00">15:30</SelectItem>
-                        <SelectItem value="16:00:00">16:00</SelectItem>
-                        <SelectItem value="16:30:00">16:30</SelectItem>
-                        <SelectItem value="17:00:00">17:00</SelectItem>
-                        <SelectItem value="17:30:00">17:30</SelectItem>
-                        <SelectItem value="18:00:00">18:00</SelectItem>
-                        <SelectItem value="18:30:00">18:30</SelectItem>
-                      </SelectGroup>
-                      <SelectGroup>
-                        <SelectLabel>Noite</SelectLabel>
-                        <SelectItem value="19:00:00">19:00</SelectItem>
-                        <SelectItem value="19:30:00">19:30</SelectItem>
-                        <SelectItem value="20:00:00">20:00</SelectItem>
-                        <SelectItem value="20:30:00">20:30</SelectItem>
-                        <SelectItem value="21:00:00">21:00</SelectItem>
-                        <SelectItem value="21:30:00">21:30</SelectItem>
-                        <SelectItem value="22:00:00">22:00</SelectItem>
-                        <SelectItem value="22:30:00">22:30</SelectItem>
-                        <SelectItem value="23:00:00">23:00</SelectItem>
-                        <SelectItem value="23:30:00">23:30</SelectItem>
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                      return (
+                        <div
+                          key={day.value}
+                          className="flex flex-col gap-2 p-4 border rounded-lg"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={!!dayConfig}
+                              onCheckedChange={(checked: boolean) => {
+                                const newValue = checked
+                                  ? [
+                                      ...field.value,
+                                      {
+                                        dayOfWeek: day.value,
+                                        fromTime: "08:00:00",
+                                        toTime: "18:00:00",
+                                      },
+                                    ]
+                                  : field.value.filter(
+                                      (d) => d.dayOfWeek !== day.value
+                                    );
+                                field.onChange(newValue);
+                              }}
+                            />
+                            <FormLabel className="m-0">{day.label}</FormLabel>
+                          </div>
+                          {dayConfig && (
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <FormLabel className="text-sm">
+                                  Início
+                                </FormLabel>
+                                <Select
+                                  value={dayConfig.fromTime}
+                                  onValueChange={(value) => {
+                                    const newValue = field.value.map((d) =>
+                                      d.dayOfWeek === day.value
+                                        ? { ...d, fromTime: value }
+                                        : d
+                                    );
+                                    field.onChange(newValue);
+                                  }}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectGroup>
+                                      <SelectLabel>Manhã</SelectLabel>
+                                      {[...Array(16)].map((_, i) => {
+                                        const hour = 5 + Math.floor(i / 2);
+                                        const minute =
+                                          i % 2 === 0 ? "00" : "30";
+                                        const time = `${hour
+                                          .toString()
+                                          .padStart(2, "0")}:${minute}:00`;
+                                        return (
+                                          <SelectItem key={time} value={time}>
+                                            {time.slice(0, 5)}
+                                          </SelectItem>
+                                        );
+                                      })}
+                                    </SelectGroup>
+                                    <SelectGroup>
+                                      <SelectLabel>Tarde</SelectLabel>
+                                      {[...Array(12)].map((_, i) => {
+                                        const hour = 13 + Math.floor(i / 2);
+                                        const minute =
+                                          i % 2 === 0 ? "00" : "30";
+                                        const time = `${hour}:${minute}:00`;
+                                        return (
+                                          <SelectItem key={time} value={time}>
+                                            {time.slice(0, 5)}
+                                          </SelectItem>
+                                        );
+                                      })}
+                                    </SelectGroup>
+                                    <SelectGroup>
+                                      <SelectLabel>Noite</SelectLabel>
+                                      {[...Array(10)].map((_, i) => {
+                                        const hour = 19 + Math.floor(i / 2);
+                                        const minute =
+                                          i % 2 === 0 ? "00" : "30";
+                                        const time = `${hour}:${minute}:00`;
+                                        return (
+                                          <SelectItem key={time} value={time}>
+                                            {time.slice(0, 5)}
+                                          </SelectItem>
+                                        );
+                                      })}
+                                    </SelectGroup>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <FormLabel className="text-sm">Fim</FormLabel>
+                                <Select
+                                  value={dayConfig.toTime}
+                                  onValueChange={(value) => {
+                                    const newValue = field.value.map((d) =>
+                                      d.dayOfWeek === day.value
+                                        ? { ...d, toTime: value }
+                                        : d
+                                    );
+                                    field.onChange(newValue);
+                                  }}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectGroup>
+                                      <SelectLabel>Manhã</SelectLabel>
+                                      {[...Array(16)].map((_, i) => {
+                                        const hour = 5 + Math.floor(i / 2);
+                                        const minute =
+                                          i % 2 === 0 ? "00" : "30";
+                                        const time = `${hour
+                                          .toString()
+                                          .padStart(2, "0")}:${minute}:00`;
+                                        return (
+                                          <SelectItem key={time} value={time}>
+                                            {time.slice(0, 5)}
+                                          </SelectItem>
+                                        );
+                                      })}
+                                    </SelectGroup>
+                                    <SelectGroup>
+                                      <SelectLabel>Tarde</SelectLabel>
+                                      {[...Array(12)].map((_, i) => {
+                                        const hour = 13 + Math.floor(i / 2);
+                                        const minute =
+                                          i % 2 === 0 ? "00" : "30";
+                                        const time = `${hour}:${minute}:00`;
+                                        return (
+                                          <SelectItem key={time} value={time}>
+                                            {time.slice(0, 5)}
+                                          </SelectItem>
+                                        );
+                                      })}
+                                    </SelectGroup>
+                                    <SelectGroup>
+                                      <SelectLabel>Noite</SelectLabel>
+                                      {[...Array(10)].map((_, i) => {
+                                        const hour = 19 + Math.floor(i / 2);
+                                        const minute =
+                                          i % 2 === 0 ? "00" : "30";
+                                        const time = `${hour}:${minute}:00`;
+                                        return (
+                                          <SelectItem key={time} value={time}>
+                                            {time.slice(0, 5)}
+                                          </SelectItem>
+                                        );
+                                      })}
+                                    </SelectGroup>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                   <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="availableToTime"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Horário final de disponibilidade</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Selecione um horário" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>Manhã</SelectLabel>
-                        <SelectItem value="05:00:00">05:00</SelectItem>
-                        <SelectItem value="05:30:00">05:30</SelectItem>
-                        <SelectItem value="06:00:00">06:00</SelectItem>
-                        <SelectItem value="06:30:00">06:30</SelectItem>
-                        <SelectItem value="07:00:00">07:00</SelectItem>
-                        <SelectItem value="07:30:00">07:30</SelectItem>
-                        <SelectItem value="08:00:00">08:00</SelectItem>
-                        <SelectItem value="08:30:00">08:30</SelectItem>
-                        <SelectItem value="09:00:00">09:00</SelectItem>
-                        <SelectItem value="09:30:00">09:30</SelectItem>
-                        <SelectItem value="10:00:00">10:00</SelectItem>
-                        <SelectItem value="10:30:00">10:30</SelectItem>
-                        <SelectItem value="11:00:00">11:00</SelectItem>
-                        <SelectItem value="11:30:00">11:30</SelectItem>
-                        <SelectItem value="12:00:00">12:00</SelectItem>
-                        <SelectItem value="12:30:00">12:30</SelectItem>
-                      </SelectGroup>
-                      <SelectGroup>
-                        <SelectLabel>Tarde</SelectLabel>
-                        <SelectItem value="13:00:00">13:00</SelectItem>
-                        <SelectItem value="13:30:00">13:30</SelectItem>
-                        <SelectItem value="14:00:00">14:00</SelectItem>
-                        <SelectItem value="14:30:00">14:30</SelectItem>
-                        <SelectItem value="15:00:00">15:00</SelectItem>
-                        <SelectItem value="15:30:00">15:30</SelectItem>
-                        <SelectItem value="16:00:00">16:00</SelectItem>
-                        <SelectItem value="16:30:00">16:30</SelectItem>
-                        <SelectItem value="17:00:00">17:00</SelectItem>
-                        <SelectItem value="17:30:00">17:30</SelectItem>
-                        <SelectItem value="18:00:00">18:00</SelectItem>
-                        <SelectItem value="18:30:00">18:30</SelectItem>
-                      </SelectGroup>
-                      <SelectGroup>
-                        <SelectLabel>Noite</SelectLabel>
-                        <SelectItem value="19:00:00">19:00</SelectItem>
-                        <SelectItem value="19:30:00">19:30</SelectItem>
-                        <SelectItem value="20:00:00">20:00</SelectItem>
-                        <SelectItem value="20:30:00">20:30</SelectItem>
-                        <SelectItem value="21:00:00">21:00</SelectItem>
-                        <SelectItem value="21:30:00">21:30</SelectItem>
-                        <SelectItem value="22:00:00">22:00</SelectItem>
-                        <SelectItem value="22:30:00">22:30</SelectItem>
-                        <SelectItem value="23:00:00">23:00</SelectItem>
-                        <SelectItem value="23:30:00">23:30</SelectItem>
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
+                </div>
               )}
             />
 
