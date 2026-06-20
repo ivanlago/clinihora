@@ -3,7 +3,6 @@
 import { Search } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useTransition } from "react";
-import React from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,12 +22,6 @@ export function PatientFilters() {
 
   const search = searchParams.get("search") ?? "";
   const sex = searchParams.get("sex") ?? "all";
-
-  const [inputValue, setInputValue] = React.useState(search);
-
-  React.useEffect(() => {
-    setInputValue(search);
-  }, [search]);
 
   const createQueryString = useCallback(
     (name: string, value: string) => {
@@ -73,10 +66,9 @@ export function PatientFilters() {
           type="search"
           placeholder="Buscar pacientes..."
           className="pl-8"
-          value={inputValue}
+          value={search}
           spellCheck={false}
           onChange={(e) => {
-            setInputValue(e.target.value);
             handleSearch(e.target.value);
           }}
         />

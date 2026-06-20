@@ -8,6 +8,7 @@ import * as schema from "@/db/schema";
 import { user as usersTable, usersToClinicsTable } from "@/db/schema";
 
 export const auth = betterAuth({
+  secret: process.env.BETTER_AUTH_SECRET,
   database: drizzleAdapter(db, {
     provider: "pg",
     schema,
@@ -21,13 +22,15 @@ export const auth = betterAuth({
     },
   },
 
-  socialProviders: {
-    google: {
-      enabled: true,
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-    },
-  },
+  socialProviders:
+    process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? {
+          google: {
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          },
+        }
+      : undefined,
   plugins: [
     customSession(async ({ user, session }) => {
       const [userData, clinics] = await Promise.all([
