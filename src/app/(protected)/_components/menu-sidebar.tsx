@@ -9,7 +9,8 @@ import {
   UsersRound,
 } from "lucide-react";
 import Image from "next/image";
-import { redirect, usePathname } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -28,6 +29,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { authClient } from "@/lib/auth-client";
 
@@ -58,15 +60,29 @@ const items = [
 export function MenuSidebar() {
   const session = authClient.useSession();
   const pathname = usePathname();
+  const router = useRouter();
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  const closeMobileMenu = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   const handleSignout = async () => {
-    await authClient.signOut();
-    redirect("/authentication");
+    try {
+      await authClient.signOut();
+      closeMobileMenu();
+      router.push("/authentication");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
+
   return (
     <Sidebar>
       <SidebarContent>
-        <div className="flex p-4 gap-2 border-b pb-4">
+        <div className="flex gap-2 border-b p-4 pb-4">
           <Image src="/logomarca.svg" alt="logo" width={28} height={28} />
           <span className="text-xl font-bold">CliniHora</span>
         </div>
@@ -81,10 +97,10 @@ export function MenuSidebar() {
                     isActive={pathname === item.url}
                     variant={pathname === item.url ? "default" : "outline"}
                   >
-                    <a href={item.url}>
+                    <Link href={item.url} onClick={closeMobileMenu}>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -97,10 +113,10 @@ export function MenuSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <a href="/subscription">
+                  <Link href="/subscription" onClick={closeMobileMenu}>
                     <Gem />
                     <span>Assinatura</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

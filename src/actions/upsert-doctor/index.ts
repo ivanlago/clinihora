@@ -2,6 +2,7 @@
 
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 
@@ -31,25 +32,46 @@ export const upsertDoctor = actionClient
       throw new Error("Clinic not found");
     }
 
-    await db
-      .insert(doctorsTable)
-      .values({
-        id: parsedInput.id,
-        name: parsedInput.name,
-        specialty: parsedInput.specialty,
-        appointmentPriceInCents: parsedInput.appointmentPriceInCents,
-        clinicId: session.user.clinic.id,
-        availableDays: parsedInput.availableDays,
-      })
-      .onConflictDoUpdate({
-        target: [doctorsTable.id],
-        set: {
+    if (parsedInput.id) {
+      const doctor = await db.query.doctorsTable.findFirst({
+        where: and(
+          eq(doctorsTable.id, parsedInput.id),
+          eq(doctorsTable.clinicId, session.user.clinic.id)
+        ),
+      });
+
+      if (!doctor) {
+        throw new Error("Doctor not found");
+      }
+
+      await db
+        .update(doctorsTable)
+        .set({
           name: parsedInput.name,
+          email: parsedInput.email,
+          phone: parsedInput.phone,
           specialty: parsedInput.specialty,
           appointmentPriceInCents: parsedInput.appointmentPriceInCents,
           availableDays: parsedInput.availableDays,
-        },
-      });
+          updatedAt: new Date(),
+        })
+        .where(eq(doctorsTable.id, parsedInput.id));
+
+      revalidatePath("/doctors");
+      revalidatePath("/dashboard");
+      return;
+    }
+
+    await db.insert(doctorsTable).values({
+      name: parsedInput.name,
+      email: parsedInput.email,
+      phone: parsedInput.phone,
+      specialty: parsedInput.specialty,
+      appointmentPriceInCents: parsedInput.appointmentPriceInCents,
+      clinicId: session.user.clinic.id,
+      availableDays: parsedInput.availableDays,
+    });
+
     revalidatePath("/doctors");
     revalidatePath("/dashboard");
   });

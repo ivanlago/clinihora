@@ -29,7 +29,7 @@ export function AddAppointmentButton({
 }: AddAppointmentButtonProps) {
   const [open, setOpen] = useState(false);
 
-  const { execute } = useAction(createAppointment, {
+  const { executeAsync, isPending } = useAction(createAppointment, {
     onSuccess: () => {
       toast.success("Agendamento criado com sucesso!");
       setOpen(false);
@@ -55,8 +55,14 @@ export function AddAppointmentButton({
         <AppointmentForm
           patients={patients}
           doctors={doctors}
+          isSubmitting={isPending}
           onSubmit={async (values) => {
-            await execute(values);
+            try {
+              await executeAsync(values);
+            } catch (error) {
+              console.error("Error creating appointment:", error);
+              toast.error("Erro ao criar agendamento");
+            }
           }}
         />
       </DialogContent>

@@ -49,28 +49,38 @@ export default function SingInForm() {
   });
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
-    await authClient.signIn.email(
-      {
-        email: values.email,
-        password: values.password,
-      },
-      {
-        onSuccess: () => {
-          router.push("/dashboard");
-          toast.success("Login realizado com sucesso");
+    try {
+      await authClient.signIn.email(
+        {
+          email: values.email,
+          password: values.password,
         },
-        onError: () => {
-          toast.error("Email ou senha inválidos");
-        },
-      }
-    );
+        {
+          onSuccess: () => {
+            router.push("/dashboard");
+            toast.success("Login realizado com sucesso");
+          },
+          onError: () => {
+            toast.error("Email ou senha inválidos");
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Error signing in:", error);
+      toast.error("Erro ao fazer login");
+    }
   }
 
   const handleGoogleLogin = async () => {
-    await authClient.signIn.social({
-      provider: "google",
-      callbackURL: "/dashboard",
-    });
+    try {
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/dashboard",
+      });
+    } catch (error) {
+      console.error("Error signing in with Google:", error);
+      toast.error("Erro ao entrar com Google");
+    }
   };
 
   return (

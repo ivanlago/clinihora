@@ -24,21 +24,31 @@ export function SubscriptionPlan({
   const router = useRouter();
   const createStripeCheckoutAction = useAction(createStripeCheckout, {
     onSuccess: async ({ data }) => {
-      if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
-        throw new Error("Stripe publishable key not found");
+      try {
+        if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+          throw new Error("Stripe publishable key not found");
+        }
+        const stripe = await loadStripe(
+          process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+        );
+        if (!stripe) {
+          throw new Error("Stripe not found");
+        }
+        if (!data?.sessionId) {
+          throw new Error("Session ID not found");
+        }
+        const result = await stripe.redirectToCheckout({
+          sessionId: data.sessionId,
+        });
+        if (result.error) {
+          throw result.error;
+        }
+      } catch (error) {
+        console.error("Error redirecting to Stripe:", error);
       }
-      const stripe = await loadStripe(
-        process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-      );
-      if (!stripe) {
-        throw new Error("Stripe not found");
-      }
-      if (!data?.sessionId) {
-        throw new Error("Session ID not found");
-      }
-      await stripe.redirectToCheckout({
-        sessionId: data.sessionId,
-      });
+    },
+    onError: () => {
+      console.error("Error creating Stripe checkout session");
     },
   });
   const features = [
@@ -50,8 +60,12 @@ export function SubscriptionPlan({
     "Suporte via e-mail",
   ];
 
-  const handleSubscribeClick = () => {
-    createStripeCheckoutAction.execute();
+  const handleSubscribeClick = async () => {
+    try {
+      await createStripeCheckoutAction.executeAsync();
+    } catch (error) {
+      console.error("Error creating Stripe checkout session:", error);
+    }
   };
 
   const handleManagePlanClick = () => {

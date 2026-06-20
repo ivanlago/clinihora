@@ -8,18 +8,22 @@ import { authClient } from "@/lib/auth-client";
 
 export default function DashboardSignOut() {
   const router = useRouter();
+
+  const handleSignOut = async () => {
+    try {
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => router.push("/authentication"),
+        },
+      });
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   return (
     <div>
-      <Button
-        variant={"outline"}
-        onClick={() =>
-          authClient.signOut({
-            fetchOptions: {
-              onSuccess: () => router.push("/authentication"),
-            },
-          })
-        }
-      >
+      <Button variant={"outline"} onClick={handleSignOut}>
         <LogOutIcon />
         Sair
       </Button>

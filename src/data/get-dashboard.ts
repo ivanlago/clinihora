@@ -17,8 +17,12 @@ interface Params {
 }
 
 export const getDashboard = async ({ from, to, session }: Params) => {
+  const periodStartDate = dayjs(from).startOf("day").toDate();
+  const periodEndDate = dayjs(to).endOf("day").toDate();
   const chartStartDate = dayjs().subtract(5, "months").startOf("month").toDate();
   const chartEndDate = dayjs().endOf("month").toDate();
+  const todayStart = dayjs().startOf("day").toDate();
+  const todayEnd = dayjs().endOf("day").toDate();
   const [
     [totalRevenue],
     [totalAppointments],
@@ -37,8 +41,8 @@ export const getDashboard = async ({ from, to, session }: Params) => {
       .where(
         and(
           eq(appointmentsTable.clinicId, session.user.clinic.id),
-          gte(appointmentsTable.date, new Date(from)),
-          lte(appointmentsTable.date, new Date(to))
+          gte(appointmentsTable.date, periodStartDate),
+          lte(appointmentsTable.date, periodEndDate)
         )
       ),
     db
@@ -49,8 +53,8 @@ export const getDashboard = async ({ from, to, session }: Params) => {
       .where(
         and(
           eq(appointmentsTable.clinicId, session.user.clinic.id),
-          gte(appointmentsTable.date, new Date(from)),
-          lte(appointmentsTable.date, new Date(to))
+          gte(appointmentsTable.date, periodStartDate),
+          lte(appointmentsTable.date, periodEndDate)
         )
       ),
     db
@@ -78,8 +82,8 @@ export const getDashboard = async ({ from, to, session }: Params) => {
         appointmentsTable,
         and(
           eq(appointmentsTable.doctorId, doctorsTable.id),
-          gte(appointmentsTable.date, new Date(from)),
-          lte(appointmentsTable.date, new Date(to))
+          gte(appointmentsTable.date, periodStartDate),
+          lte(appointmentsTable.date, periodEndDate)
         )
       )
       .where(eq(doctorsTable.clinicId, session.user.clinic.id))
@@ -96,8 +100,8 @@ export const getDashboard = async ({ from, to, session }: Params) => {
       .where(
         and(
           eq(appointmentsTable.clinicId, session.user.clinic.id),
-          gte(appointmentsTable.date, new Date(from)),
-          lte(appointmentsTable.date, new Date(to))
+          gte(appointmentsTable.date, periodStartDate),
+          lte(appointmentsTable.date, periodEndDate)
         )
       )
       .groupBy(doctorsTable.specialty)
@@ -105,8 +109,8 @@ export const getDashboard = async ({ from, to, session }: Params) => {
     db.query.appointmentsTable.findMany({
       where: and(
         eq(appointmentsTable.clinicId, session.user.clinic.id),
-        gte(appointmentsTable.date, new Date()),
-        lte(appointmentsTable.date, new Date())
+        gte(appointmentsTable.date, todayStart),
+        lte(appointmentsTable.date, todayEnd)
       ),
       with: {
         patient: true,

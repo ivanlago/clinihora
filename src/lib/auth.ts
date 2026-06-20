@@ -14,6 +14,11 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    sendResetPassword: async ({ user, url }) => {
+      console.info(
+        `[CliniHora] Link de redefinição de senha para ${user.email}: ${url}`
+      );
+    },
   },
 
   socialProviders: {

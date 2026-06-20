@@ -3,6 +3,10 @@ import { z } from "zod";
 export const upsertDoctorSchema = z.object({
     id: z.string().uuid().optional(),
     name: z.string().trim().min(1, { message: "O nome é obrigatório" }),
+    email: z.string().trim().min(1, { message: "O email é obrigatório" }).email({
+      message: "Email inválido",
+    }),
+    phone: z.string().trim().min(1, { message: "O celular é obrigatório" }),
     specialty: z
       .string()
       .trim()

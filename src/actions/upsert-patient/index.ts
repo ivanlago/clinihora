@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
@@ -39,6 +39,17 @@ export const upsertPatient = actionClient
       }
 
       if (parsedInput.id) {
+        const patient = await db.query.patientsTable.findFirst({
+          where: and(
+            eq(patientsTable.id, parsedInput.id),
+            eq(patientsTable.clinicId, session.user.clinic.id)
+          ),
+        });
+
+        if (!patient) {
+          throw new Error("Patient not found");
+        }
+
         // Update existing patient
         await db
           .update(patientsTable)
@@ -49,7 +60,12 @@ export const upsertPatient = actionClient
             sex: parsedInput.sex,
             updatedAt: new Date(),
           })
-          .where(eq(patientsTable.id, parsedInput.id));
+          .where(
+            and(
+              eq(patientsTable.id, parsedInput.id),
+              eq(patientsTable.clinicId, session.user.clinic.id)
+            )
+          );
 
         revalidatePath("/patients");
         revalidatePath("/dashboard");

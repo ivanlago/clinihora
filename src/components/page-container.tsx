@@ -1,10 +1,12 @@
 export const PageContainer = ({ children }: { children: React.ReactNode }) => {
-  return <div className="space-y-6 p-6 w-full">{children}</div>;
+  return <div className="space-y-6 p-4 sm:p-6 w-full">{children}</div>;
 };
 
 export const PageHeader = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div className="flex items-center justify-between w-full">{children}</div>
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between w-full">
+      {children}
+    </div>
   );
 };
 

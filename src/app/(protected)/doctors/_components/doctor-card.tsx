@@ -1,6 +1,13 @@
 "use client";
 import { Avatar } from "@radix-ui/react-avatar";
-import { Calendar1Icon, ClockIcon, DollarSignIcon } from "lucide-react";
+import {
+  Calendar1Icon,
+  ClockIcon,
+  DollarSignIcon,
+  LinkIcon,
+  MailIcon,
+  PhoneIcon,
+} from "lucide-react";
 import React, { useState } from "react";
 
 import { formatCurrencyInCents } from "@/_helpers/currency";
@@ -20,8 +27,14 @@ import { doctorsTable } from "@/db/schema";
 import { getAvailability } from "../_helpers/availability";
 import DoctorForm from "./doctor-form";
 
+type DoctorWithGoogleCalendar = typeof doctorsTable.$inferSelect & {
+  googleCalendarAccount?: {
+    googleEmail: string;
+  } | null;
+};
+
 interface DoctorCardProps {
-  doctor: typeof doctorsTable.$inferSelect;
+  doctor: DoctorWithGoogleCalendar;
 }
 
 export default function DoctorCard({ doctor }: DoctorCardProps) {
@@ -49,6 +62,18 @@ export default function DoctorCard({ doctor }: DoctorCardProps) {
       </CardHeader>
       <Separator />
       <CardContent className="flex flex-col gap-2">
+        {doctor.email && (
+          <Badge variant="outline">
+            <MailIcon className="mr-1 h-4 w-4" />
+            {doctor.email}
+          </Badge>
+        )}
+        {doctor.phone && (
+          <Badge variant="outline">
+            <PhoneIcon className="mr-1 h-4 w-4" />
+            {doctor.phone}
+          </Badge>
+        )}
         <div className="flex flex-col gap-2">
           {availability.map((day) => (
             <div
@@ -70,9 +95,26 @@ export default function DoctorCard({ doctor }: DoctorCardProps) {
           <DollarSignIcon className="mr-1" />{" "}
           {formatCurrencyInCents(doctor.appointmentPriceInCents)}
         </Badge>
+        <Badge
+          variant={doctor.googleCalendarAccount ? "default" : "outline"}
+          className="justify-start"
+        >
+          <Calendar1Icon className="mr-1 h-4 w-4" />
+          {doctor.googleCalendarAccount
+            ? `Google Agenda: ${doctor.googleCalendarAccount.googleEmail}`
+            : "Google Agenda não conectada"}
+        </Badge>
       </CardContent>
       <Separator />
-      <CardFooter>
+      <CardFooter className="flex flex-col gap-2">
+        <Button variant="outline" className="w-full" asChild>
+          <a href={`/api/google-calendar/connect?doctorId=${doctor.id}`}>
+            <LinkIcon className="mr-2 h-4 w-4" />
+            {doctor.googleCalendarAccount
+              ? "Reconectar Google Agenda"
+              : "Conectar Google Agenda"}
+          </a>
+        </Button>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button className="w-full">Ver detalhes</Button>

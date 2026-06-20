@@ -49,25 +49,31 @@ export default function SingUpForm() {
   });
 
   async function onSubmit(values: z.infer<typeof registerSchema>) {
-    await authClient.signUp.email(
-      {
-        email: values.email,
-        password: values.password,
-        name: values.name,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Conta criada com sucesso");
-          router.push("/dashboard");
+    try {
+      await authClient.signUp.email(
+        {
+          email: values.email,
+          password: values.password,
+          name: values.name,
         },
-        onError: (ctx) => {
-          if (ctx.error.code === "USER_ALREADY_EXISTS") {
-            toast.error("Usuário já existe");
-            return;
-          }
-        },
-      }
-    );
+        {
+          onSuccess: () => {
+            toast.success("Conta criada com sucesso");
+            router.push("/dashboard");
+          },
+          onError: (ctx) => {
+            if (ctx.error.code === "USER_ALREADY_EXISTS") {
+              toast.error("Usuário já existe");
+              return;
+            }
+            toast.error("Erro ao criar conta");
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Error signing up:", error);
+      toast.error("Erro ao criar conta");
+    }
   }
   return (
     <Card>

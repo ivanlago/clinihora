@@ -7,7 +7,10 @@ import { z } from "zod";
 import { db } from "@/db";
 import { appointmentsTable } from "@/db/schema";
 import { auth } from "@/lib/auth";
+import { syncAppointmentToGoogleCalendar } from "@/lib/google-calendar";
 import { actionClient } from "@/lib/safe-action";
+
+import { validateAppointment } from "../_helpers/validate-appointment";
 
 const createAppointmentSchema = z.object({
   patientId: z.string().min(1),
@@ -29,12 +32,28 @@ export const createAppointment = actionClient
       throw new Error("Unauthorized");
     }
 
-    await db.insert(appointmentsTable).values({
+    const { doctor } = await validateAppointment({
+      clinicId: session.user.clinic.id,
       patientId: parsedInput.patientId,
       doctorId: parsedInput.doctorId,
-      clinicId: session.user.clinic.id,
       date: parsedInput.date,
-      appointmentPriceInCents: parsedInput.appointmentPriceInCents,
+    });
+
+    const [appointment] = await db
+      .insert(appointmentsTable)
+      .values({
+        patientId: parsedInput.patientId,
+        doctorId: parsedInput.doctorId,
+        clinicId: session.user.clinic.id,
+        date: parsedInput.date,
+        appointmentPriceInCents: doctor.appointmentPriceInCents,
+      })
+      .returning({
+        id: appointmentsTable.id,
+      });
+
+    await syncAppointmentToGoogleCalendar({
+      appointmentId: appointment.id,
     });
 
     revalidatePath("/appointments");

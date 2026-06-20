@@ -15,6 +15,20 @@
       "when": 1755585040020,
       "tag": "0001_woozy_captain_cross",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781839779634,
+      "tag": "0002_charming_infant_terrible",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1781855328385,
+      "tag": "0003_dapper_revanche",
+      "breakpoints": true
     }
   ]
 }

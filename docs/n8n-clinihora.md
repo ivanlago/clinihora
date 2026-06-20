@@ -1,0 +1,163 @@
+# Integração n8n com CliniHora
+
+## Acesso pelo WhatsApp
+
+O atendimento pelo WhatsApp deve entrar primeiro no n8n. O CliniHora não recebe a mensagem do WhatsApp diretamente; ele fornece as APIs para o n8n consultar médicos, horários, pacientes e agendamentos.
+
+Fluxo:
+
+```txt
+WhatsApp
+  -> n8n
+  -> CliniHora API
+  -> n8n
+  -> WhatsApp
+```
+
+Na home do CliniHora há um ícone de atendimento. Configure a URL do WhatsApp em:
+
+```env
+NEXT_PUBLIC_N8N_WHATSAPP_URL="https://wa.me/55DDDNUMERO?text=Ol%C3%A1%2C%20quero%20agendar%20uma%20consulta"
+```
+
+Enquanto essa variável estiver vazia, o ícone abre `/n8n-test`.
+
+No n8n, use um destes caminhos:
+
+- WhatsApp Business Cloud, recomendado para produção.
+- Provedor WhatsApp com node/webhook no n8n, como Evolution API, Z-API, Twilio ou outro BSP.
+
+O workflow deve receber a mensagem, classificar a intenção e chamar os endpoints abaixo. Para responder ao paciente e avisar médico/paciente, use o próprio node do provedor WhatsApp no n8n.
+
+Todas as chamadas devem enviar:
+
+```http
+Authorization: Bearer ${N8N_API_KEY}
+X-Clinic-Id: ${CLINIC_ID}
+Content-Type: application/json
+```
+
+Para descobrir clínicas, use apenas `Authorization`:
+
+```http
+GET /api/n8n/clinics
+```
+
+## Endpoints
+
+### Listar médicos
+
+```http
+GET /api/n8n/doctors
+GET /api/n8n/doctors?specialty=cardiologia
+```
+
+### Consultar horários
+
+```http
+GET /api/n8n/available-times?doctorId=<uuid>&date=2026-06-30
+```
+
+### Buscar ou criar paciente
+
+```http
+POST /api/n8n/patients/find-or-create
+```
+
+```json
+{
+  "name": "Maria Silva",
+  "email": "maria@email.com",
+  "phone": "71999999999",
+  "sex": "female"
+}
+```
+
+### Listar agendamentos futuros
+
+```http
+GET /api/n8n/appointments
+GET /api/n8n/appointments?patientId=<uuid>
+GET /api/n8n/appointments?doctorId=<uuid>
+```
+
+### Marcar consulta
+
+```http
+POST /api/n8n/appointments
+```
+
+```json
+{
+  "patientId": "<uuid>",
+  "doctorId": "<uuid>",
+  "date": "2026-06-30T14:00:00.000Z"
+}
+```
+
+### Remarcar consulta
+
+```http
+PATCH /api/n8n/appointments/<appointmentId>
+```
+
+```json
+{
+  "date": "2026-06-30T15:00:00.000Z"
+}
+```
+
+Também aceita `patientId` e `doctorId`.
+
+### Cancelar consulta
+
+```http
+DELETE /api/n8n/appointments/<appointmentId>
+```
+
+### Encaminhar para humano
+
+```http
+POST /api/n8n/conversation-handoff
+```
+
+```json
+{
+  "patientName": "Maria Silva",
+  "patientPhone": "71999999999",
+  "channel": "whatsapp",
+  "reason": "Pergunta clínica fora do escopo do agente",
+  "transcript": "Paciente perguntou se deve trocar a medicação..."
+}
+```
+
+## Fluxo sugerido no n8n
+
+1. Webhook recebe mensagem.
+2. Classificador identifica intenção: marcar, remarcar, cancelar, dúvida simples ou handoff.
+3. Para marcar:
+   - coletar nome, telefone, email, sexo;
+   - chamar `patients/find-or-create`;
+   - listar médicos ou filtrar por especialidade;
+   - consultar `available-times`;
+   - pedir confirmação explícita;
+   - chamar `POST /appointments`;
+   - enviar as mensagens retornadas em `notification.patient` e `notification.doctor`.
+4. Para remarcar:
+   - localizar consultas futuras por paciente;
+   - consultar novos horários;
+   - pedir confirmação;
+   - chamar `PATCH /appointments/:id`;
+   - enviar notificações retornadas.
+5. Para cancelar:
+   - localizar consulta futura;
+   - pedir confirmação explícita;
+   - chamar `DELETE /appointments/:id`;
+   - enviar notificações retornadas.
+6. Para assuntos fora do escopo:
+   - chamar `conversation-handoff`;
+   - avisar o paciente que a equipe continuará o atendimento.
+
+## Limites do agente
+
+O agente não deve diagnosticar, prescrever, interpretar exames, prometer encaixe sem disponibilidade real, cancelar sem confirmação ou gravar direto no banco.

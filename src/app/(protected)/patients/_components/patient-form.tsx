@@ -87,7 +87,7 @@ export function PatientForm({ defaultValues, onSuccess }: PatientFormProps) {
     });
   }, [defaultValues, form]);
 
-  const { execute, status } = useAction(upsertPatient, {
+  const { executeAsync, status } = useAction(upsertPatient, {
     onSuccess: () => {
       toast.success("Paciente salvo com sucesso");
       form.reset();
@@ -102,8 +102,13 @@ export function PatientForm({ defaultValues, onSuccess }: PatientFormProps) {
     },
   });
 
-  const onSubmit = (data: PatientFormValues) => {
-    execute(data);
+  const onSubmit = async (data: PatientFormValues) => {
+    try {
+      await executeAsync(data);
+    } catch (error) {
+      console.error("Error saving patient:", error);
+      toast.error("Erro ao salvar paciente");
+    }
   };
 
   async function handleDeletePatient() {

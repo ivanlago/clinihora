@@ -38,7 +38,7 @@ export function AppointmentTableActions({
 }: AppointmentTableActionsProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const { execute: executeDelete } = useAction(deleteAppointment, {
+  const { executeAsync: executeDelete } = useAction(deleteAppointment, {
     onSuccess: () => {
       toast.success("Agendamento excluído com sucesso!");
     },
@@ -47,7 +47,9 @@ export function AppointmentTableActions({
     },
   });
 
-  const { execute: executeUpsert } = useAction(upsertAppointment, {
+  const { executeAsync: executeUpsert, isPending: isSaving } = useAction(
+    upsertAppointment,
+    {
     onSuccess: () => {
       toast.success("Agendamento salvo com sucesso!");
       setIsDialogOpen(false);
@@ -55,7 +57,8 @@ export function AppointmentTableActions({
     onError: (error) => {
       toast.error(error.error.serverError || "Erro ao salvar agendamento");
     },
-  });
+    }
+  );
 
   const handleDelete = async () => {
     if (confirm("Tem certeza que deseja excluir este agendamento?")) {
@@ -92,6 +95,7 @@ export function AppointmentTableActions({
             key={`appointment-form-${appointment.id}-${isDialogOpen}`}
             patients={patients}
             doctors={doctors}
+            isSubmitting={isSaving}
             defaultValues={{
               id: appointment.id,
               patientId: appointment.patientId,
@@ -100,7 +104,12 @@ export function AppointmentTableActions({
               appointmentPriceInCents: appointment.appointmentPriceInCents,
             }}
             onSubmit={async (values) => {
-              await executeUpsert(values);
+              try {
+                await executeUpsert(values);
+              } catch (error) {
+                console.error("Error saving appointment:", error);
+                toast.error("Erro ao salvar agendamento");
+              }
             }}
           />
         </DialogContent>

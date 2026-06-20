@@ -1,6 +1,6 @@
 "use client";
 
-import { addMonths, format } from "date-fns";
+import { endOfMonth, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { parseAsIsoDate, useQueryState } from "nuqs";
@@ -25,7 +25,7 @@ export function DatePicker({
   );
   const [to, setTo] = useQueryState(
     "to",
-    parseAsIsoDate.withDefault(addMonths(new Date(), 1))
+    parseAsIsoDate.withDefault(endOfMonth(new Date()))
   );
   const handleDateSelect = (dateRange: DateRange | undefined) => {
     if (dateRange?.from) {

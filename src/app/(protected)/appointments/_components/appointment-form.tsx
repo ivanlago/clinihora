@@ -54,8 +54,9 @@ type AppointmentFormValues = z.infer<typeof appointmentFormSchema>;
 interface AppointmentFormProps {
   patients: Patient[];
   doctors: Doctor[];
-  onSubmit: (values: AppointmentFormValues) => void;
+  onSubmit: (values: AppointmentFormValues) => Promise<void> | void;
   defaultValues?: Partial<AppointmentFormValues>;
+  isSubmitting?: boolean;
 }
 
 export function AppointmentForm({
@@ -63,6 +64,7 @@ export function AppointmentForm({
   doctors,
   onSubmit,
   defaultValues,
+  isSubmitting = false,
 }: AppointmentFormProps) {
   const form = useForm<AppointmentFormValues>({
     resolver: zodResolver(appointmentFormSchema),
@@ -91,12 +93,12 @@ export function AppointmentForm({
     enabled: !!selectedDate && !!selectedDoctorId,
   });
 
-  const handleSubmit = (values: AppointmentFormValues) => {
+  const handleSubmit = async (values: AppointmentFormValues) => {
     // Combine date and time into a single datetime
     const [hours, minutes] = values.time.split(":").map(Number);
     const dateTime = setMinutes(setHours(values.date, hours), minutes);
 
-    onSubmit({
+    await onSubmit({
       ...values,
       date: dateTime,
       appointmentPriceInCents: Math.round(values.appointmentPriceInCents),
@@ -288,8 +290,16 @@ export function AppointmentForm({
           />
         </div>
 
-        <Button type="submit" className="w-full">
-          {defaultValues?.id ? "Atualizar" : "Agendar"}
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={isSubmitting || form.formState.isSubmitting}
+        >
+          {isSubmitting || form.formState.isSubmitting
+            ? "Salvando..."
+            : defaultValues?.id
+              ? "Atualizar"
+              : "Agendar"}
         </Button>
       </form>
     </Form>

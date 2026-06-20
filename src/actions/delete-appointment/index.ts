@@ -8,6 +8,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { appointmentsTable } from "@/db/schema";
 import { auth } from "@/lib/auth";
+import { deleteAppointmentFromGoogleCalendar } from "@/lib/google-calendar";
 import { actionClient } from "@/lib/safe-action";
 
 const deleteAppointmentSchema = z.object({
@@ -36,6 +37,13 @@ export const deleteAppointment = actionClient
     if (appointment.clinicId !== session.user.clinic.id) {
       throw new Error("Appointment not found");
     }
+
+    await deleteAppointmentFromGoogleCalendar({
+      appointmentId: appointment.id,
+      doctorId: appointment.doctorId,
+      eventId: appointment.googleCalendarEventId,
+      calendarId: appointment.googleCalendarId,
+    });
 
     await db
       .delete(appointmentsTable)
