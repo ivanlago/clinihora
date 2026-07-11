@@ -117,7 +117,9 @@ export const usersToClinicsTableRelations = relations(
 export const clinicsTableRelations = relations(clinicsTable, ({ many }) => ({
   doctors: many(doctorsTable),
   patients: many(patientsTable),
+  procedures: many(proceduresTable),
   appointments: many(appointmentsTable),
+  medicalRecords: many(medicalRecordsTable),
   usersToClinics: many(usersToClinicsTable),
 }));
 
@@ -151,6 +153,7 @@ export const doctorsTableRelations = relations(
       references: [clinicsTable.id],
     }),
     appointments: many(appointmentsTable),
+    medicalRecords: many(medicalRecordsTable),
     googleCalendarAccount: one(doctorGoogleCalendarAccountsTable),
   })
 );
@@ -212,8 +215,32 @@ export const patientsTableRelations = relations(
       references: [clinicsTable.id],
     }),
     appointments: many(appointmentsTable),
+    medicalRecords: many(medicalRecordsTable),
   })
 );
+
+export const proceduresTable = pgTable("procedures", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clinicId: uuid("clinic_id")
+    .notNull()
+    .references(() => clinicsTable.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  priceInCents: integer("price_in_cents").notNull(),
+  durationInMinutes: integer("duration_in_minutes").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export const proceduresTableRelations = relations(proceduresTable, ({ one }) => ({
+  clinic: one(clinicsTable, {
+    fields: [proceduresTable.clinicId],
+    references: [clinicsTable.id],
+  }),
+}));
 
 export const appointmentsTable = pgTable("appointments", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -252,6 +279,53 @@ export const appointmentsTableRelations = relations(
     clinic: one(clinicsTable, {
       fields: [appointmentsTable.clinicId],
       references: [clinicsTable.id],
+    }),
+  })
+);
+
+export const medicalRecordTypeEnum = pgEnum("medical_record_type", [
+  "consultation",
+  "anamnesis",
+  "evolution",
+  "prescription",
+  "exam",
+]);
+
+export const medicalRecordsTable = pgTable("medical_records", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clinicId: uuid("clinic_id")
+    .notNull()
+    .references(() => clinicsTable.id, { onDelete: "cascade" }),
+  patientId: uuid("patient_id")
+    .notNull()
+    .references(() => patientsTable.id, { onDelete: "cascade" }),
+  doctorId: uuid("doctor_id")
+    .notNull()
+    .references(() => doctorsTable.id, { onDelete: "restrict" }),
+  type: medicalRecordTypeEnum("type").notNull(),
+  title: text("title").notNull(),
+  notes: text("notes").notNull(),
+  recordedAt: timestamp("recorded_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export const medicalRecordsTableRelations = relations(
+  medicalRecordsTable,
+  ({ one }) => ({
+    clinic: one(clinicsTable, {
+      fields: [medicalRecordsTable.clinicId],
+      references: [clinicsTable.id],
+    }),
+    patient: one(patientsTable, {
+      fields: [medicalRecordsTable.patientId],
+      references: [patientsTable.id],
+    }),
+    doctor: one(doctorsTable, {
+      fields: [medicalRecordsTable.doctorId],
+      references: [doctorsTable.id],
     }),
   })
 );

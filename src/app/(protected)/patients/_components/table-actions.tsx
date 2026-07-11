@@ -1,4 +1,5 @@
-import { MoreVerticalIcon } from "lucide-react";
+import { FileTextIcon, MoreVerticalIcon } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,13 @@ export default function PatientTableActions({
 }: PatientTableActionsProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   return (
-    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+    <div className="flex justify-end gap-1">
+      <Button variant="ghost" size="icon" asChild title="Abrir prontuário">
+        <Link href={`/patients/${patient.id}`}>
+          <FileTextIcon className="h-4 w-4" />
+        </Link>
+      </Button>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon">
           <MoreVerticalIcon className="h-4 w-4" />
@@ -29,6 +36,7 @@ export default function PatientTableActions({
           onSuccess={() => setIsDialogOpen(false)}
         />
       )}
-    </Dialog>
+      </Dialog>
+    </div>
   );
 }

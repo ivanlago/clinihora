@@ -2,6 +2,7 @@
 
 import {
   CalendarDays,
+  ClipboardList,
   Gem,
   LayoutDashboard,
   LogOut,
@@ -54,6 +55,11 @@ const items = [
     title: "Pacientes",
     url: "/patients",
     icon: UsersRound,
+  },
+  {
+    title: "Procedimentos",
+    url: "/procedures",
+    icon: ClipboardList,
   },
 ];
 
