@@ -2,6 +2,7 @@ import "dotenv/config";
 
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+
 import { Client } from "pg";
 
 const client = new Client({ connectionString: process.env.DATABASE_URL });
@@ -19,6 +20,14 @@ async function applyFile(fileName: string) {
   await client.query(sql.replaceAll("--> statement-breakpoint", ""));
 }
 
+async function columnExists(tableName: string, columnName: string) {
+  const result = await client.query<{ exists: boolean }>(
+    "select exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = $1 and column_name = $2) as exists",
+    [tableName, columnName]
+  );
+  return result.rows[0]?.exists ?? false;
+}
+
 async function main() {
   await client.connect();
   try {
@@ -32,10 +41,14 @@ async function main() {
       await applyFile("0005_fancy_cerebro.sql");
     }
 
+    if (!(await columnExists("appointments", "type"))) {
+      await applyFile("0006_sad_doctor_doom.sql");
+    }
+
     await client.query("commit");
 
-    const result = await client.query<{ procedures: boolean; medical_records: boolean }>(
-      "select to_regclass('public.procedures') is not null as procedures, to_regclass('public.medical_records') is not null as medical_records"
+    const result = await client.query<{ procedures: boolean; medical_records: boolean; appointment_type: boolean }>(
+      "select to_regclass('public.procedures') is not null as procedures, to_regclass('public.medical_records') is not null as medical_records, exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'appointments' and column_name = 'type') as appointment_type"
     );
     console.log(result.rows[0]);
   } catch (error) {

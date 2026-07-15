@@ -15,17 +15,19 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import { Doctor, Patient } from "../types";
+import { Doctor, Patient, Procedure } from "../types";
 import { AppointmentForm } from "./appointment-form";
 
 interface AddAppointmentButtonProps {
   patients: Patient[];
   doctors: Doctor[];
+  procedures: Procedure[];
 }
 
 export function AddAppointmentButton({
   patients,
   doctors,
+  procedures,
 }: AddAppointmentButtonProps) {
   const [open, setOpen] = useState(false);
 
@@ -55,6 +57,7 @@ export function AddAppointmentButton({
         <AppointmentForm
           patients={patients}
           doctors={doctors}
+          procedures={procedures}
           isSubmitting={isPending}
           onSubmit={async (values) => {
             try {

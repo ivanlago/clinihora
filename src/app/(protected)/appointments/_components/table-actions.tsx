@@ -29,12 +29,14 @@ interface AppointmentTableActionsProps {
   appointment: AppointmentWithRelations;
   patients: AppointmentWithRelations["patient"][];
   doctors: AppointmentWithRelations["doctor"][];
+  procedures: NonNullable<AppointmentWithRelations["procedure"]>[];
 }
 
 export function AppointmentTableActions({
   appointment,
   patients,
   doctors,
+  procedures,
 }: AppointmentTableActionsProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -95,6 +97,7 @@ export function AppointmentTableActions({
             key={`appointment-form-${appointment.id}-${isDialogOpen}`}
             patients={patients}
             doctors={doctors}
+            procedures={procedures}
             isSubmitting={isSaving}
             defaultValues={{
               id: appointment.id,
@@ -102,6 +105,8 @@ export function AppointmentTableActions({
               doctorId: appointment.doctorId,
               date: appointment.date,
               appointmentPriceInCents: appointment.appointmentPriceInCents,
+              type: appointment.type,
+              procedureId: appointment.procedureId,
             }}
             onSubmit={async (values) => {
               try {

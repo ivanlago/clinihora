@@ -12,7 +12,7 @@ import {
   PageTitle,
 } from "@/components/page-container";
 import { db } from "@/db";
-import { appointmentsTable, doctorsTable, patientsTable } from "@/db/schema";
+import { appointmentsTable, doctorsTable, patientsTable, proceduresTable } from "@/db/schema";
 import { auth } from "@/lib/auth";
 
 import { AddAppointmentButton } from "./_components/add-appointment-button";
@@ -41,6 +41,7 @@ export default async function AppointmentsPage() {
     with: {
       patient: true,
       doctor: true,
+      procedure: true,
     },
   });
 
@@ -51,6 +52,9 @@ export default async function AppointmentsPage() {
 
   const doctors = await db.query.doctorsTable.findMany({
     where: eq(doctorsTable.clinicId, session.user.clinic.id),
+  });
+  const procedures = await db.query.proceduresTable.findMany({
+    where: eq(proceduresTable.clinicId, session.user.clinic.id),
   });
 
   return (
@@ -63,7 +67,7 @@ export default async function AppointmentsPage() {
           </PageDescription>
         </PageHeaderContent>
         <PageActions>
-          <AddAppointmentButton patients={patients} doctors={doctors} />
+          <AddAppointmentButton patients={patients} doctors={doctors} procedures={procedures} />
         </PageActions>
       </PageHeader>
       <PageContent>
@@ -71,6 +75,7 @@ export default async function AppointmentsPage() {
           appointments={appointments}
           patients={patients}
           doctors={doctors}
+          procedures={procedures}
         />
       </PageContent>
     </PageContainer>

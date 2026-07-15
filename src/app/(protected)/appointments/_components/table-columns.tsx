@@ -12,12 +12,19 @@ import { AppointmentTableActions } from "./table-actions";
 interface TableColumnsProps {
   patients: AppointmentWithRelations["patient"][];
   doctors: AppointmentWithRelations["doctor"][];
+  procedures: NonNullable<AppointmentWithRelations["procedure"]>[];
 }
 
 export const appointmentsTableColumns = ({
   patients,
   doctors,
+  procedures,
 }: TableColumnsProps): ColumnDef<AppointmentWithRelations>[] => [
+  {
+    id: "type",
+    header: "Tipo",
+    cell: ({ row }) => <Badge variant="outline">{row.original.type === "procedure" ? row.original.procedure?.name ?? "Procedimento" : "Consulta"}</Badge>,
+  },
   {
     accessorKey: "patient.name",
     header: "Paciente",
@@ -70,6 +77,7 @@ export const appointmentsTableColumns = ({
           appointment={appointment}
           patients={patients}
           doctors={doctors}
+          procedures={procedures}
         />
       );
     },

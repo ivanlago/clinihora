@@ -52,6 +52,8 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
       patientId,
       doctorId,
       date,
+      type: appointment.type,
+      procedureId: appointment.procedureId,
     });
 
     if (appointment.doctorId !== doctorId) {

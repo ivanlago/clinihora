@@ -22,6 +22,8 @@ const upsertAppointmentSchema = z.object({
   doctorId: z.string().min(1),
   date: z.date(),
   appointmentPriceInCents: z.number().min(1),
+  type: z.enum(["consultation", "procedure"]),
+  procedureId: z.string().uuid().nullable().optional(),
 });
 
 export type UpsertAppointmentSchema = z.infer<typeof upsertAppointmentSchema>;
@@ -51,12 +53,14 @@ export const upsertAppointment = actionClient
         throw new Error("Appointment not found");
       }
 
-      const { doctor } = await validateAppointment({
+      const { doctor, procedure } = await validateAppointment({
         appointmentId: parsedInput.id,
         clinicId: session.user.clinic.id,
         patientId: parsedInput.patientId,
         doctorId: parsedInput.doctorId,
         date: parsedInput.date,
+        type: parsedInput.type,
+        procedureId: parsedInput.procedureId,
       });
 
       if (appointment.doctorId !== parsedInput.doctorId) {
@@ -74,7 +78,9 @@ export const upsertAppointment = actionClient
           patientId: parsedInput.patientId,
           doctorId: parsedInput.doctorId,
           date: parsedInput.date,
-          appointmentPriceInCents: doctor.appointmentPriceInCents,
+          type: parsedInput.type,
+          procedureId: parsedInput.type === "procedure" ? parsedInput.procedureId : null,
+          appointmentPriceInCents: procedure?.priceInCents ?? doctor.appointmentPriceInCents,
           updatedAt: new Date(),
         })
         .where(eq(appointmentsTable.id, parsedInput.id));
@@ -88,11 +94,13 @@ export const upsertAppointment = actionClient
       return { success: true };
     }
 
-    const { doctor } = await validateAppointment({
+    const { doctor, procedure } = await validateAppointment({
       clinicId: session.user.clinic.id,
       patientId: parsedInput.patientId,
       doctorId: parsedInput.doctorId,
       date: parsedInput.date,
+      type: parsedInput.type,
+      procedureId: parsedInput.procedureId,
     });
 
     // Create new appointment
@@ -103,7 +111,9 @@ export const upsertAppointment = actionClient
         doctorId: parsedInput.doctorId,
         clinicId: session.user.clinic.id,
         date: parsedInput.date,
-        appointmentPriceInCents: doctor.appointmentPriceInCents,
+        type: parsedInput.type,
+        procedureId: parsedInput.type === "procedure" ? parsedInput.procedureId : null,
+        appointmentPriceInCents: procedure?.priceInCents ?? doctor.appointmentPriceInCents,
       })
       .returning({
         id: appointmentsTable.id,

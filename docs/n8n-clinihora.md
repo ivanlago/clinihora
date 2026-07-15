@@ -14,6 +14,52 @@ WhatsApp
   -> WhatsApp
 ```
 
+## Dados da integração Meta e WhatsApp Business
+
+Estes são os dados identificados para configurar o WhatsApp Business Cloud no n8n, na ordem prática de necessidade:
+
+1. Token de acesso da Meta: valor iniciado por `EAGF...` (não armazenado neste repositório).
+2. ID do aplicativo Meta: `27426780603627606`.
+3. Tipo do token verificado: `User`.
+4. ID do número de telefone (Phone Number ID): `1172430959290272`.
+5. ID da conta WhatsApp Business (WABA ID): `2941442312870411`.
+6. Número remetente da conta de teste: `+1 555 204 6416`.
+7. Número destinatário usado no teste: `+55 71 99181-4240`.
+8. Destinatário no formato exigido pela API: `5571991814240`.
+9. Versão da Graph API usada no teste: `v25.0`.
+10. Endpoint de envio: `https://graph.facebook.com/v25.0/1172430959290272/messages`.
+11. Produto de mensageria: `whatsapp`.
+12. Template de teste: `hello_world`.
+13. Idioma do template: `en_US`.
+14. Instância n8n: `https://n8n.lagolab.org/`.
+15. Interface de workflows do n8n: `https://n8n.lagolab.org/home/workflows`.
+
+O POST de teste envia o template `hello_world` do número de teste da Meta para `+55 71 99181-4240`:
+
+```http
+POST https://graph.facebook.com/v25.0/1172430959290272/messages
+Authorization: Bearer ${META_WHATSAPP_ACCESS_TOKEN}
+Content-Type: application/json
+
+{
+  "messaging_product": "whatsapp",
+  "to": "5571991814240",
+  "type": "template",
+  "template": {
+    "name": "hello_world",
+    "language": {
+      "code": "en_US"
+    }
+  }
+}
+```
+
+### Situação do token
+
+O token anteriormente utilizado expirou em `19/06/2026 às 15:00 PDT`. A validação realizada em `14/07/2026 às 17:57 PDT` retornou `Session has expired`; portanto, ele não pode mais ser usado. Quando o acesso ao Meta for Developers estiver disponível novamente, deve ser gerado um token novo e ele deve ser cadastrado diretamente nas credenciais protegidas do n8n.
+
+Nunca registre o token completo em documentação, código, workflow exportado ou controle de versão.
+
 Na home do CliniHora há um ícone de atendimento. Configure a URL do WhatsApp em:
 
 ```env

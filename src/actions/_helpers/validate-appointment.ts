@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import { and, eq, ne } from "drizzle-orm";
 
 import { db } from "@/db";
-import { appointmentsTable, doctorsTable, patientsTable } from "@/db/schema";
+import { appointmentsTable, doctorsTable, patientsTable, proceduresTable } from "@/db/schema";
 
 interface ValidateAppointmentParams {
   appointmentId?: string;
@@ -12,6 +12,8 @@ interface ValidateAppointmentParams {
   patientId: string;
   doctorId: string;
   date: Date;
+  type: "consultation" | "procedure";
+  procedureId?: string | null;
 }
 
 export async function validateAppointment({
@@ -20,8 +22,10 @@ export async function validateAppointment({
   patientId,
   doctorId,
   date,
+  type,
+  procedureId,
 }: ValidateAppointmentParams) {
-  const [patient, doctor] = await Promise.all([
+  const [patient, doctor, procedure] = await Promise.all([
     db.query.patientsTable.findFirst({
       where: and(
         eq(patientsTable.id, patientId),
@@ -34,6 +38,11 @@ export async function validateAppointment({
         eq(doctorsTable.clinicId, clinicId)
       ),
     }),
+    procedureId
+      ? db.query.proceduresTable.findFirst({
+          where: and(eq(proceduresTable.id, procedureId), eq(proceduresTable.clinicId, clinicId), eq(proceduresTable.isActive, true)),
+        })
+      : Promise.resolve(undefined),
   ]);
 
   if (!patient) {
@@ -42,6 +51,9 @@ export async function validateAppointment({
 
   if (!doctor) {
     throw new Error("Médico não encontrado");
+  }
+  if (type === "procedure" && !procedure) {
+    throw new Error("Procedimento não encontrado ou inativo");
   }
 
   const selectedDay = doctor.availableDays?.find(
@@ -75,5 +87,6 @@ export async function validateAppointment({
   return {
     doctor,
     patient,
+    procedure,
   };
 }

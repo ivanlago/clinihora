@@ -115,6 +115,7 @@ export const getDashboard = async ({ from, to, session }: Params) => {
       with: {
         patient: true,
         doctor: true,
+        procedure: true,
       },
     }),
     db

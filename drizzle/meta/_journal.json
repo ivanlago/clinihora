@@ -43,6 +43,13 @@
       "when": 1783732363040,
       "tag": "0005_fancy_cerebro",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783733774204,
+      "tag": "0006_sad_doctor_doom",
+      "breakpoints": true
     }
   ]
 }

@@ -76,6 +76,7 @@ export const POST = async (request: NextRequest) => {
       patientId: input.patientId,
       doctorId: input.doctorId,
       date,
+      type: "consultation",
     });
     const [appointment] = await db
       .insert(appointmentsTable)

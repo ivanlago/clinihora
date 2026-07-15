@@ -235,12 +235,18 @@ export const proceduresTable = pgTable("procedures", {
     .$onUpdate(() => new Date()),
 });
 
-export const proceduresTableRelations = relations(proceduresTable, ({ one }) => ({
+export const proceduresTableRelations = relations(proceduresTable, ({ many, one }) => ({
   clinic: one(clinicsTable, {
     fields: [proceduresTable.clinicId],
     references: [clinicsTable.id],
   }),
+  appointments: many(appointmentsTable),
 }));
+
+export const appointmentTypeEnum = pgEnum("appointment_type", [
+  "consultation",
+  "procedure",
+]);
 
 export const appointmentsTable = pgTable("appointments", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -250,6 +256,10 @@ export const appointmentsTable = pgTable("appointments", {
   doctorId: uuid("doctor_id")
     .notNull()
     .references(() => doctorsTable.id, { onDelete: "cascade" }),
+  procedureId: uuid("procedure_id").references(() => proceduresTable.id, {
+    onDelete: "restrict",
+  }),
+  type: appointmentTypeEnum("type").default("consultation").notNull(),
   clinicId: uuid("clinic_id")
     .notNull()
     .references(() => clinicsTable.id, { onDelete: "cascade" }),
@@ -275,6 +285,10 @@ export const appointmentsTableRelations = relations(
     doctor: one(doctorsTable, {
       fields: [appointmentsTable.doctorId],
       references: [doctorsTable.id],
+    }),
+    procedure: one(proceduresTable, {
+      fields: [appointmentsTable.procedureId],
+      references: [proceduresTable.id],
     }),
     clinic: one(clinicsTable, {
       fields: [appointmentsTable.clinicId],

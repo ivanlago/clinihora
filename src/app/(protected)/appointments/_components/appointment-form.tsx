@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-import { Doctor, Patient } from "../types";
+import { Doctor, Patient, Procedure } from "../types";
 
 const appointmentFormSchema = z.object({
   id: z.string().uuid().optional(),
@@ -47,6 +47,8 @@ const appointmentFormSchema = z.object({
   }),
   time: z.string().min(1, "Selecione um horário"),
   appointmentPriceInCents: z.number().min(1, "Valor inválido"),
+  type: z.enum(["consultation", "procedure"]),
+  procedureId: z.string().uuid().nullable().optional(),
 });
 
 type AppointmentFormValues = z.infer<typeof appointmentFormSchema>;
@@ -54,6 +56,7 @@ type AppointmentFormValues = z.infer<typeof appointmentFormSchema>;
 interface AppointmentFormProps {
   patients: Patient[];
   doctors: Doctor[];
+  procedures: Procedure[];
   onSubmit: (values: AppointmentFormValues) => Promise<void> | void;
   defaultValues?: Partial<AppointmentFormValues>;
   isSubmitting?: boolean;
@@ -62,6 +65,7 @@ interface AppointmentFormProps {
 export function AppointmentForm({
   patients,
   doctors,
+  procedures,
   onSubmit,
   defaultValues,
   isSubmitting = false,
@@ -70,6 +74,7 @@ export function AppointmentForm({
     resolver: zodResolver(appointmentFormSchema),
     defaultValues: {
       ...defaultValues,
+      type: defaultValues?.type ?? "consultation",
       time: defaultValues?.date
         ? format(defaultValues.date, "HH:mm")
         : undefined,
@@ -81,6 +86,7 @@ export function AppointmentForm({
   });
 
   const selectedDoctorId = form.watch("doctorId");
+  const selectedType = form.watch("type");
   const selectedDate = form.watch("date");
 
   const { data: availableTimes } = useQuery({
@@ -122,6 +128,21 @@ export function AppointmentForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <FormField control={form.control} name="type" render={({ field }) => (
+          <FormItem><FormLabel>Tipo de agendamento</FormLabel>
+            <Select value={field.value} onValueChange={(value: "consultation" | "procedure") => {
+              field.onChange(value); form.setValue("procedureId", null);
+              const doctor = doctors.find((item) => item.id === form.getValues("doctorId"));
+              form.setValue("appointmentPriceInCents", value === "consultation" ? doctor?.appointmentPriceInCents ?? 0 : 0);
+            }}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="consultation">Consulta</SelectItem><SelectItem value="procedure">Procedimento</SelectItem></SelectContent></Select><FormMessage />
+          </FormItem>
+        )} />
+
+        {selectedType === "procedure" && <FormField control={form.control} name="procedureId" render={({ field }) => (
+          <FormItem><FormLabel>Procedimento</FormLabel>
+            <Select value={field.value ?? undefined} onValueChange={(value) => { field.onChange(value); const procedure = procedures.find((item) => item.id === value); if (procedure) form.setValue("appointmentPriceInCents", procedure.priceInCents); }}><FormControl><SelectTrigger><SelectValue placeholder="Selecione um procedimento" /></SelectTrigger></FormControl><SelectContent>{procedures.filter((item) => item.isActive).map((procedure) => <SelectItem key={procedure.id} value={procedure.id}>{procedure.name}</SelectItem>)}</SelectContent></Select><FormMessage />
+          </FormItem>
+        )} />}
         <FormField
           control={form.control}
           name="patientId"
@@ -157,7 +178,7 @@ export function AppointmentForm({
                 onValueChange={(value) => {
                   field.onChange(value);
                   const doctor = doctors.find((d) => d.id === value);
-                  if (doctor) {
+                  if (doctor && form.getValues("type") === "consultation") {
                     form.setValue(
                       "appointmentPriceInCents",
                       doctor.appointmentPriceInCents
@@ -189,7 +210,7 @@ export function AppointmentForm({
           name="appointmentPriceInCents"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Valor da Consulta</FormLabel>
+              <FormLabel>Valor</FormLabel>
               <FormControl>
                 <NumericFormat
                   value={field.value ? field.value / 100 : undefined}
