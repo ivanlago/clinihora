@@ -137,7 +137,7 @@ POST /api/n8n/appointments
 {
   "patientId": "<uuid>",
   "doctorId": "<uuid>",
-  "date": "2026-06-30T14:00:00.000Z"
+  "date": "2026-06-30T14:00:00-03:00"
 }
 ```
 
@@ -149,7 +149,7 @@ PATCH /api/n8n/appointments/<appointmentId>
 
 ```json
 {
-  "date": "2026-06-30T15:00:00.000Z"
+  "date": "2026-06-30T15:00:00-03:00"
 }
 ```
 

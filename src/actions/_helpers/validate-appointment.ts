@@ -1,10 +1,10 @@
 "use server";
 
-import dayjs from "dayjs";
 import { and, eq, ne } from "drizzle-orm";
 
 import { db } from "@/db";
 import { appointmentsTable, doctorsTable, patientsTable, proceduresTable } from "@/db/schema";
+import { clinicTime } from "@/lib/clinic-time";
 
 interface ValidateAppointmentParams {
   appointmentId?: string;
@@ -57,14 +57,14 @@ export async function validateAppointment({
   }
 
   const selectedDay = doctor.availableDays?.find(
-    (day) => day.dayOfWeek === dayjs(date).day()
+    (day) => day.dayOfWeek === clinicTime(date).day()
   );
 
   if (!selectedDay) {
     throw new Error("Médico indisponível nesta data");
   }
 
-  const selectedTime = dayjs(date).format("HH:mm:ss");
+  const selectedTime = clinicTime(date).format("HH:mm:ss");
   if (selectedTime < selectedDay.fromTime || selectedTime > selectedDay.toTime) {
     throw new Error("Horário fora da disponibilidade do médico");
   }

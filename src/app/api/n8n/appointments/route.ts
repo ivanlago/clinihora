@@ -1,4 +1,3 @@
-import dayjs from "dayjs";
 import { and, asc, eq, gte } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
@@ -7,6 +6,7 @@ import { z } from "zod";
 import { validateAppointment } from "@/actions/_helpers/validate-appointment";
 import { db } from "@/db";
 import { appointmentsTable } from "@/db/schema";
+import { clinicTime } from "@/lib/clinic-time";
 import { syncAppointmentToGoogleCalendar } from "@/lib/google-calendar";
 import { handleN8nApiError, requireN8nClinicAuth } from "@/lib/n8n-api";
 
@@ -70,7 +70,7 @@ export const POST = async (request: NextRequest) => {
 
   try {
     const input = createAppointmentSchema.parse(await request.json());
-    const date = dayjs(input.date).toDate();
+    const date = new Date(input.date);
     const { doctor, patient } = await validateAppointment({
       clinicId: auth.clinicId,
       patientId: input.patientId,
@@ -106,12 +106,12 @@ export const POST = async (request: NextRequest) => {
         patient: {
           phone: patient.phone,
           email: patient.email,
-          message: `Consulta marcada com ${doctor.name} em ${dayjs(date).format("DD/MM/YYYY [às] HH:mm")}.`,
+          message: `Consulta marcada com ${doctor.name} em ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`,
         },
         doctor: {
           phone: doctor.phone,
           email: doctor.email,
-          message: `Nova consulta com ${patient.name} em ${dayjs(date).format("DD/MM/YYYY [às] HH:mm")}.`,
+          message: `Nova consulta com ${patient.name} em ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`,
         },
       },
     });

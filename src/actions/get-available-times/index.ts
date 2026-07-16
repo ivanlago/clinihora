@@ -1,8 +1,5 @@
 "use server";
 
-import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone";
-import utc from "dayjs/plugin/utc";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { z } from "zod";
@@ -11,11 +8,9 @@ import { generateTimeSlots } from "@/_helpers/time";
 import { db } from "@/db";
 import { appointmentsTable, doctorsTable } from "@/db/schema";
 import { auth } from "@/lib/auth";
+import { clinicDate, clinicTime } from "@/lib/clinic-time";
 import { actionClient } from "@/lib/safe-action";
 // import { actionClient } from "@/lib/next-safe-action";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
 
 export const getAvailableTimes = actionClient
   .schema(
@@ -40,7 +35,7 @@ export const getAvailableTimes = actionClient
     if (!doctor) {
       throw new Error("Médico não encontrado");
     }
-    const selectedDayOfWeek = dayjs(parsedInput.date).day();
+    const selectedDayOfWeek = clinicDate(parsedInput.date).day();
     const selectedDay = (doctor.availableDays ?? []).find(
       (day) => day.dayOfWeek === selectedDayOfWeek
     );
@@ -51,10 +46,11 @@ export const getAvailableTimes = actionClient
       where: eq(appointmentsTable.doctorId, parsedInput.doctorId),
     });
     const appointmentsOnSelectedDate = appointments
-      .filter((appointment) => {
-        return dayjs(appointment.date).isSame(parsedInput.date, "day");
-      })
-      .map((appointment) => dayjs(appointment.date).format("HH:mm:ss"));
+      .filter(
+        (appointment) =>
+          clinicTime(appointment.date).format("YYYY-MM-DD") === parsedInput.date
+      )
+      .map((appointment) => clinicTime(appointment.date).format("HH:mm:ss"));
     const timeSlots = generateTimeSlots();
 
     const doctorAvailableFrom = selectedDay.fromTime;

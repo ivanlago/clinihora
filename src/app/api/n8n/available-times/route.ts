@@ -1,4 +1,3 @@
-import dayjs from "dayjs";
 import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -6,6 +5,7 @@ import { z } from "zod";
 import { generateTimeSlots } from "@/_helpers/time";
 import { db } from "@/db";
 import { appointmentsTable, doctorsTable } from "@/db/schema";
+import { clinicDate, clinicTime } from "@/lib/clinic-time";
 import { handleN8nApiError, requireN8nClinicAuth } from "@/lib/n8n-api";
 
 const availableTimesSearchSchema = z.object({
@@ -36,7 +36,7 @@ export const GET = async (request: NextRequest) => {
       throw new Error("Médico não encontrado");
     }
 
-    const selectedDayOfWeek = dayjs(input.date).day();
+    const selectedDayOfWeek = clinicDate(input.date).day();
     const selectedDay = (doctor.availableDays ?? []).find(
       (day) => day.dayOfWeek === selectedDayOfWeek
     );
@@ -59,8 +59,11 @@ export const GET = async (request: NextRequest) => {
       },
     });
     const appointmentsOnSelectedDate = appointments
-      .filter((appointment) => dayjs(appointment.date).isSame(input.date, "day"))
-      .map((appointment) => dayjs(appointment.date).format("HH:mm:ss"));
+      .filter(
+        (appointment) =>
+          clinicTime(appointment.date).format("YYYY-MM-DD") === input.date
+      )
+      .map((appointment) => clinicTime(appointment.date).format("HH:mm:ss"));
     const doctorTimeSlots = generateTimeSlots().filter((time) => {
       return time >= selectedDay.fromTime && time <= selectedDay.toTime;
     });

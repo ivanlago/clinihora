@@ -1,4 +1,3 @@
-import dayjs from "dayjs";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
@@ -7,6 +6,7 @@ import { z } from "zod";
 import { validateAppointment } from "@/actions/_helpers/validate-appointment";
 import { db } from "@/db";
 import { appointmentsTable } from "@/db/schema";
+import { clinicTime } from "@/lib/clinic-time";
 import {
   deleteAppointmentFromGoogleCalendar,
   syncAppointmentToGoogleCalendar,
@@ -45,7 +45,7 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
 
     const patientId = input.patientId ?? appointment.patientId;
     const doctorId = input.doctorId ?? appointment.doctorId;
-    const date = input.date ? dayjs(input.date).toDate() : appointment.date;
+    const date = input.date ? new Date(input.date) : appointment.date;
     const { doctor, patient } = await validateAppointment({
       appointmentId: appointment.id,
       clinicId: auth.clinicId,
@@ -94,12 +94,12 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
         patient: {
           phone: patient.phone,
           email: patient.email,
-          message: `Consulta remarcada com ${doctor.name} para ${dayjs(date).format("DD/MM/YYYY [às] HH:mm")}.`,
+          message: `Consulta remarcada com ${doctor.name} para ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`,
         },
         doctor: {
           phone: doctor.phone,
           email: doctor.email,
-          message: `Consulta de ${patient.name} remarcada para ${dayjs(date).format("DD/MM/YYYY [às] HH:mm")}.`,
+          message: `Consulta de ${patient.name} remarcada para ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`,
         },
       },
     });
@@ -147,12 +147,12 @@ export const DELETE = async (request: NextRequest, { params }: Params) => {
         patient: {
           phone: appointment.patient.phone,
           email: appointment.patient.email,
-          message: `Consulta com ${appointment.doctor.name} em ${dayjs(appointment.date).format("DD/MM/YYYY [às] HH:mm")} cancelada.`,
+          message: `Consulta com ${appointment.doctor.name} em ${clinicTime(appointment.date).format("DD/MM/YYYY [às] HH:mm")} cancelada.`,
         },
         doctor: {
           phone: appointment.doctor.phone,
           email: appointment.doctor.email,
-          message: `Consulta de ${appointment.patient.name} em ${dayjs(appointment.date).format("DD/MM/YYYY [às] HH:mm")} cancelada.`,
+          message: `Consulta de ${appointment.patient.name} em ${clinicTime(appointment.date).format("DD/MM/YYYY [às] HH:mm")} cancelada.`,
         },
       },
     });
