@@ -46,7 +46,7 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
     const patientId = input.patientId ?? appointment.patientId;
     const doctorId = input.doctorId ?? appointment.doctorId;
     const date = input.date ? new Date(input.date) : appointment.date;
-    const { doctor, patient } = await validateAppointment({
+    const { doctor, patient, procedure } = await validateAppointment({
       appointmentId: appointment.id,
       clinicId: auth.clinicId,
       patientId,
@@ -71,7 +71,8 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
         patientId,
         doctorId,
         date,
-        appointmentPriceInCents: doctor.appointmentPriceInCents,
+        appointmentPriceInCents:
+          procedure?.priceInCents ?? doctor.appointmentPriceInCents,
         updatedAt: new Date(),
       })
       .where(eq(appointmentsTable.id, appointment.id))
@@ -89,17 +90,24 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
         ...updatedAppointment,
         doctor,
         patient,
+        procedure,
       },
       notification: {
         patient: {
           phone: patient.phone,
           email: patient.email,
-          message: `Consulta remarcada com ${doctor.name} para ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`,
+          message:
+            appointment.type === "procedure"
+              ? `Procedimento ${procedure?.name} remarcado com ${doctor.name} para ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`
+              : `Consulta remarcada com ${doctor.name} para ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`,
         },
         doctor: {
           phone: doctor.phone,
           email: doctor.email,
-          message: `Consulta de ${patient.name} remarcada para ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`,
+          message:
+            appointment.type === "procedure"
+              ? `Procedimento ${procedure?.name} de ${patient.name} remarcado para ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`
+              : `Consulta de ${patient.name} remarcada para ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`,
         },
       },
     });
@@ -122,6 +130,7 @@ export const DELETE = async (request: NextRequest, { params }: Params) => {
       with: {
         doctor: true,
         patient: true,
+        procedure: true,
       },
     });
 
@@ -147,12 +156,18 @@ export const DELETE = async (request: NextRequest, { params }: Params) => {
         patient: {
           phone: appointment.patient.phone,
           email: appointment.patient.email,
-          message: `Consulta com ${appointment.doctor.name} em ${clinicTime(appointment.date).format("DD/MM/YYYY [às] HH:mm")} cancelada.`,
+          message:
+            appointment.type === "procedure"
+              ? `Procedimento ${appointment.procedure?.name} com ${appointment.doctor.name} em ${clinicTime(appointment.date).format("DD/MM/YYYY [às] HH:mm")} cancelado.`
+              : `Consulta com ${appointment.doctor.name} em ${clinicTime(appointment.date).format("DD/MM/YYYY [às] HH:mm")} cancelada.`,
         },
         doctor: {
           phone: appointment.doctor.phone,
           email: appointment.doctor.email,
-          message: `Consulta de ${appointment.patient.name} em ${clinicTime(appointment.date).format("DD/MM/YYYY [às] HH:mm")} cancelada.`,
+          message:
+            appointment.type === "procedure"
+              ? `Procedimento ${appointment.procedure?.name} de ${appointment.patient.name} em ${clinicTime(appointment.date).format("DD/MM/YYYY [às] HH:mm")} cancelado.`
+              : `Consulta de ${appointment.patient.name} em ${clinicTime(appointment.date).format("DD/MM/YYYY [às] HH:mm")} cancelada.`,
         },
       },
     });

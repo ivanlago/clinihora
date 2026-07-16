@@ -88,13 +88,21 @@ export function AppointmentForm({
   const selectedDoctorId = form.watch("doctorId");
   const selectedType = form.watch("type");
   const selectedDate = form.watch("date");
+  const selectedProcedureId = form.watch("procedureId");
 
   const { data: availableTimes } = useQuery({
-    queryKey: ["available-times", selectedDate, selectedDoctorId],
+    queryKey: [
+      "available-times",
+      selectedDate,
+      selectedDoctorId,
+      selectedProcedureId,
+    ],
     queryFn: () =>
       getAvailableTimes({
         date: dayjs(selectedDate).format("YYYY-MM-DD"),
         doctorId: selectedDoctorId,
+        procedureId:
+          selectedType === "procedure" ? selectedProcedureId : undefined,
       }),
     enabled: !!selectedDate && !!selectedDoctorId,
   });

@@ -40,6 +40,10 @@ type AppointmentWithRelations = typeof appointmentsTable.$inferSelect & {
     email: string | null;
     specialty: string;
   };
+  procedure: {
+    name: string;
+    durationInMinutes: number;
+  } | null;
 };
 
 const getGoogleOAuthConfig = () => {
@@ -199,18 +203,27 @@ const refreshGoogleCalendarAccessToken = async ({
 
 const getAppointmentEventPayload = (appointment: AppointmentWithRelations) => {
   const startDate = appointment.date;
-  const endDate = dayjs(startDate).add(APPOINTMENT_DURATION_IN_MINUTES, "minute");
+  const duration =
+    appointment.procedure?.durationInMinutes ??
+    APPOINTMENT_DURATION_IN_MINUTES;
+  const endDate = dayjs(startDate).add(duration, "minute");
   const patient = appointment.patient;
   const doctor = appointment.doctor;
 
   return {
-    summary: `Consulta - ${patient.name}`,
+    summary:
+      appointment.type === "procedure"
+        ? `${appointment.procedure?.name ?? "Procedimento"} - ${patient.name}`
+        : `Consulta - ${patient.name}`,
     description: [
       `Paciente: ${patient.name}`,
       `Telefone: ${patient.phone}`,
       `Email: ${patient.email}`,
       `Médico: ${doctor.name}`,
       `Especialidade: ${doctor.specialty}`,
+      appointment.procedure
+        ? `Procedimento: ${appointment.procedure.name}`
+        : "Tipo: Consulta",
     ].join("\n"),
     start: {
       dateTime: startDate.toISOString(),
@@ -300,6 +313,7 @@ export const syncAppointmentToGoogleCalendar = async ({
     with: {
       patient: true,
       doctor: true,
+      procedure: true,
     },
   });
 

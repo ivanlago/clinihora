@@ -20,6 +20,16 @@ const createAppointmentSchema = z.object({
   patientId: z.string().uuid(),
   doctorId: z.string().uuid(),
   date: z.string().datetime({ offset: true }),
+  type: z.enum(["consultation", "procedure"]).default("consultation"),
+  procedureId: z.string().uuid().nullable().optional(),
+}).superRefine((input, context) => {
+  if (input.type === "procedure" && !input.procedureId) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["procedureId"],
+      message: "procedureId é obrigatório para procedimentos",
+    });
+  }
 });
 
 export const GET = async (request: NextRequest) => {
@@ -50,6 +60,7 @@ export const GET = async (request: NextRequest) => {
       with: {
         doctor: true,
         patient: true,
+        procedure: true,
       },
     });
 
@@ -71,12 +82,13 @@ export const POST = async (request: NextRequest) => {
   try {
     const input = createAppointmentSchema.parse(await request.json());
     const date = new Date(input.date);
-    const { doctor, patient } = await validateAppointment({
+    const { doctor, patient, procedure } = await validateAppointment({
       clinicId: auth.clinicId,
       patientId: input.patientId,
       doctorId: input.doctorId,
       date,
-      type: "consultation",
+      type: input.type,
+      procedureId: input.procedureId,
     });
     const [appointment] = await db
       .insert(appointmentsTable)
@@ -85,7 +97,10 @@ export const POST = async (request: NextRequest) => {
         patientId: input.patientId,
         doctorId: input.doctorId,
         date,
-        appointmentPriceInCents: doctor.appointmentPriceInCents,
+        type: input.type,
+        procedureId: input.type === "procedure" ? input.procedureId : null,
+        appointmentPriceInCents:
+          procedure?.priceInCents ?? doctor.appointmentPriceInCents,
       })
       .returning();
 
@@ -101,17 +116,24 @@ export const POST = async (request: NextRequest) => {
         ...appointment,
         doctor,
         patient,
+        procedure,
       },
       notification: {
         patient: {
           phone: patient.phone,
           email: patient.email,
-          message: `Consulta marcada com ${doctor.name} em ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`,
+          message:
+            input.type === "procedure"
+              ? `Procedimento ${procedure?.name} marcado com ${doctor.name} em ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`
+              : `Consulta marcada com ${doctor.name} em ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`,
         },
         doctor: {
           phone: doctor.phone,
           email: doctor.email,
-          message: `Nova consulta com ${patient.name} em ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`,
+          message:
+            input.type === "procedure"
+              ? `Novo procedimento ${procedure?.name} com ${patient.name} em ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`
+              : `Nova consulta com ${patient.name} em ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`,
         },
       },
     });

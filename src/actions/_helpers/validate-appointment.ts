@@ -2,6 +2,11 @@
 
 import { and, eq, ne } from "drizzle-orm";
 
+import {
+  appointmentIntervalsOverlap,
+  clockTimeToMinutes,
+  DEFAULT_APPOINTMENT_DURATION_IN_MINUTES,
+} from "@/_helpers/appointment-time";
 import { db } from "@/db";
 import { appointmentsTable, doctorsTable, patientsTable, proceduresTable } from "@/db/schema";
 import { clinicTime } from "@/lib/clinic-time";
@@ -69,15 +74,40 @@ export async function validateAppointment({
     throw new Error("Horário fora da disponibilidade do médico");
   }
 
-  const sameTimeCondition = and(
-    eq(appointmentsTable.clinicId, clinicId),
-    eq(appointmentsTable.doctorId, doctorId),
-    eq(appointmentsTable.date, date),
-    appointmentId ? ne(appointmentsTable.id, appointmentId) : undefined
-  );
+  const appointments = await db.query.appointmentsTable.findMany({
+    where: and(
+      eq(appointmentsTable.clinicId, clinicId),
+      eq(appointmentsTable.doctorId, doctorId),
+      appointmentId ? ne(appointmentsTable.id, appointmentId) : undefined
+    ),
+    with: {
+      procedure: {
+        columns: {
+          durationInMinutes: true,
+        },
+      },
+    },
+  });
 
-  const conflictingAppointment = await db.query.appointmentsTable.findFirst({
-    where: sameTimeCondition,
+  const selectedDate = clinicTime(date).format("YYYY-MM-DD");
+  const selectedStart = clockTimeToMinutes(selectedTime);
+  const selectedDuration =
+    procedure?.durationInMinutes ?? DEFAULT_APPOINTMENT_DURATION_IN_MINUTES;
+  const conflictingAppointment = appointments.find((appointment) => {
+    if (clinicTime(appointment.date).format("YYYY-MM-DD") !== selectedDate) {
+      return false;
+    }
+
+    return appointmentIntervalsOverlap({
+      firstStart: selectedStart,
+      firstDuration: selectedDuration,
+      secondStart: clockTimeToMinutes(
+        clinicTime(appointment.date).format("HH:mm:ss")
+      ),
+      secondDuration:
+        appointment.procedure?.durationInMinutes ??
+        DEFAULT_APPOINTMENT_DURATION_IN_MINUTES,
+    });
   });
 
   if (conflictingAppointment) {

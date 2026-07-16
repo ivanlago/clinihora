@@ -102,6 +102,13 @@ GET /api/n8n/doctors?specialty=cardiologia
 
 ```http
 GET /api/n8n/available-times?doctorId=<uuid>&date=2026-06-30
+GET /api/n8n/available-times?doctorId=<uuid>&date=2026-06-30&procedureId=<uuid>
+```
+
+### Listar procedimentos ativos
+
+```http
+GET /api/n8n/procedures
 ```
 
 ### Buscar ou criar paciente
@@ -137,7 +144,20 @@ POST /api/n8n/appointments
 {
   "patientId": "<uuid>",
   "doctorId": "<uuid>",
-  "date": "2026-06-30T14:00:00-03:00"
+  "date": "2026-06-30T14:00:00-03:00",
+  "type": "consultation"
+}
+```
+
+Para procedimentos, envie `type` e `procedureId`:
+
+```json
+{
+  "patientId": "<uuid>",
+  "doctorId": "<uuid>",
+  "date": "2026-06-30T14:00:00-03:00",
+  "type": "procedure",
+  "procedureId": "<uuid>"
 }
 ```
 
