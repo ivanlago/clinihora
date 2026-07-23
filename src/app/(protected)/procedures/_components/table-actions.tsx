@@ -5,16 +5,18 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { proceduresTable } from "@/db/schema";
+import { doctorsTable, proceduresTable } from "@/db/schema";
 
 import { ProcedureForm } from "./procedure-form";
 
 interface ProcedureTableActionsProps {
-  procedure: typeof proceduresTable.$inferSelect;
+  procedure: typeof proceduresTable.$inferSelect & { doctorIds: string[] };
+  doctors: (typeof doctorsTable.$inferSelect)[];
 }
 
 export default function ProcedureTableActions({
   procedure,
+  doctors,
 }: ProcedureTableActionsProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -29,6 +31,7 @@ export default function ProcedureTableActions({
         <ProcedureForm
           key={`procedure-form-${procedure.id}-${isDialogOpen}`}
           procedure={procedure}
+          doctors={doctors}
           onSuccess={() => setIsDialogOpen(false)}
         />
       )}

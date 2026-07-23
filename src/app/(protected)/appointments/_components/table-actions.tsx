@@ -28,7 +28,7 @@ import { AppointmentForm } from "./appointment-form";
 interface AppointmentTableActionsProps {
   appointment: AppointmentWithRelations;
   patients: AppointmentWithRelations["patient"][];
-  doctors: AppointmentWithRelations["doctor"][];
+  doctors: NonNullable<AppointmentWithRelations["doctor"]>[];
   procedures: NonNullable<AppointmentWithRelations["procedure"]>[];
 }
 

@@ -4,13 +4,27 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import { formatCurrencyInCents } from "@/_helpers/currency";
 import { Badge } from "@/components/ui/badge";
-import { proceduresTable } from "@/db/schema";
+import { doctorsTable, proceduresTable } from "@/db/schema";
 
 import TableActions from "./table-actions";
 
-type Procedure = typeof proceduresTable.$inferSelect;
+type Procedure = typeof proceduresTable.$inferSelect & { doctorIds: string[] };
 
-export const proceduresTableColumns: ColumnDef<Procedure>[] = [
+export const proceduresTableColumns = ({
+  doctors,
+}: {
+  doctors: (typeof doctorsTable.$inferSelect)[];
+}): ColumnDef<Procedure>[] => [
+  {
+    id: "professionals",
+    header: "Profissionais",
+    cell: ({ row }) => {
+      const names = doctors
+        .filter((doctor) => row.original.doctorIds.includes(doctor.id))
+        .map((doctor) => doctor.name);
+      return names.length ? names.join(", ") : "Nenhum";
+    },
+  },
   {
     id: "name",
     accessorKey: "name",
@@ -46,6 +60,8 @@ export const proceduresTableColumns: ColumnDef<Procedure>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => <TableActions procedure={row.original} />,
+    cell: ({ row }) => (
+      <TableActions procedure={row.original} doctors={doctors} />
+    ),
   },
 ];

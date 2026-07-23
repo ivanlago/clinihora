@@ -38,12 +38,14 @@ export const deleteAppointment = actionClient
       throw new Error("Appointment not found");
     }
 
-    await deleteAppointmentFromGoogleCalendar({
-      appointmentId: appointment.id,
-      doctorId: appointment.doctorId,
-      eventId: appointment.googleCalendarEventId,
-      calendarId: appointment.googleCalendarId,
-    });
+    if (appointment.doctorId) {
+      await deleteAppointmentFromGoogleCalendar({
+        appointmentId: appointment.id,
+        doctorId: appointment.doctorId,
+        eventId: appointment.googleCalendarEventId,
+        calendarId: appointment.googleCalendarId,
+      });
+    }
 
     await db
       .delete(appointmentsTable)

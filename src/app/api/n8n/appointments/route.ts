@@ -18,7 +18,7 @@ const listAppointmentsSearchSchema = z.object({
 
 const createAppointmentSchema = z.object({
   patientId: z.string().uuid(),
-  doctorId: z.string().uuid(),
+  doctorId: z.string().uuid().nullable().optional(),
   date: z.string().datetime({ offset: true }),
   type: z.enum(["consultation", "procedure"]).default("consultation"),
   procedureId: z.string().uuid().nullable().optional(),
@@ -100,13 +100,15 @@ export const POST = async (request: NextRequest) => {
         type: input.type,
         procedureId: input.type === "procedure" ? input.procedureId : null,
         appointmentPriceInCents:
-          procedure?.priceInCents ?? doctor.appointmentPriceInCents,
+          procedure?.priceInCents ?? doctor!.appointmentPriceInCents,
       })
       .returning();
 
-    await syncAppointmentToGoogleCalendar({
-      appointmentId: appointment.id,
-    });
+    if (doctor) {
+      await syncAppointmentToGoogleCalendar({
+        appointmentId: appointment.id,
+      });
+    }
 
     revalidatePath("/appointments");
     revalidatePath("/dashboard");
@@ -124,17 +126,17 @@ export const POST = async (request: NextRequest) => {
           email: patient.email,
           message:
             input.type === "procedure"
-              ? `Procedimento ${procedure?.name} marcado com ${doctor.name} em ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`
-              : `Consulta marcada com ${doctor.name} em ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`,
+              ? `Procedimento ${procedure?.name}${doctor ? ` marcado com ${doctor.name}` : " marcado"} em ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`
+              : `Consulta marcada com ${doctor!.name} em ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`,
         },
-        doctor: {
+        doctor: doctor ? {
           phone: doctor.phone,
           email: doctor.email,
           message:
             input.type === "procedure"
               ? `Novo procedimento ${procedure?.name} com ${patient.name} em ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`
               : `Nova consulta com ${patient.name} em ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`,
-        },
+        } : null,
       },
     });
   } catch (error) {

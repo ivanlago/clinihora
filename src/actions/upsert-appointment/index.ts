@@ -19,7 +19,7 @@ import { validateAppointment } from "../_helpers/validate-appointment";
 const upsertAppointmentSchema = z.object({
   id: z.string().uuid().optional(),
   patientId: z.string().min(1),
-  doctorId: z.string().min(1),
+  doctorId: z.string().uuid().nullable().optional(),
   date: z.date(),
   appointmentPriceInCents: z.number().min(1),
   type: z.enum(["consultation", "procedure"]),
@@ -66,7 +66,7 @@ export const upsertAppointment = actionClient
       if (appointment.doctorId !== parsedInput.doctorId) {
         await deleteAppointmentFromGoogleCalendar({
           appointmentId: appointment.id,
-          doctorId: appointment.doctorId,
+          doctorId: appointment.doctorId!,
           eventId: appointment.googleCalendarEventId,
           calendarId: appointment.googleCalendarId,
         });
@@ -80,7 +80,8 @@ export const upsertAppointment = actionClient
           date: parsedInput.date,
           type: parsedInput.type,
           procedureId: parsedInput.type === "procedure" ? parsedInput.procedureId : null,
-          appointmentPriceInCents: procedure?.priceInCents ?? doctor.appointmentPriceInCents,
+          appointmentPriceInCents:
+            procedure?.priceInCents ?? doctor!.appointmentPriceInCents,
           updatedAt: new Date(),
         })
         .where(eq(appointmentsTable.id, parsedInput.id));
@@ -113,7 +114,8 @@ export const upsertAppointment = actionClient
         date: parsedInput.date,
         type: parsedInput.type,
         procedureId: parsedInput.type === "procedure" ? parsedInput.procedureId : null,
-        appointmentPriceInCents: procedure?.priceInCents ?? doctor.appointmentPriceInCents,
+        appointmentPriceInCents:
+          procedure?.priceInCents ?? doctor!.appointmentPriceInCents,
       })
       .returning({
         id: appointmentsTable.id,

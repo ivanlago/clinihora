@@ -45,10 +45,14 @@ async function main() {
       await applyFile("0006_sad_doctor_doom.sql");
     }
 
+    if (!(await tableExists("procedures_to_doctors"))) {
+      await applyFile("0007_glamorous_nightshade.sql");
+    }
+
     await client.query("commit");
 
-    const result = await client.query<{ procedures: boolean; medical_records: boolean; appointment_type: boolean }>(
-      "select to_regclass('public.procedures') is not null as procedures, to_regclass('public.medical_records') is not null as medical_records, exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'appointments' and column_name = 'type') as appointment_type"
+    const result = await client.query<{ procedures: boolean; medical_records: boolean; appointment_type: boolean; procedure_professionals: boolean; appointment_doctor_optional: boolean }>(
+      "select to_regclass('public.procedures') is not null as procedures, to_regclass('public.medical_records') is not null as medical_records, exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'appointments' and column_name = 'type') as appointment_type, to_regclass('public.procedures_to_doctors') is not null as procedure_professionals, exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'appointments' and column_name = 'doctor_id' and is_nullable = 'YES') as appointment_doctor_optional"
     );
     console.log(result.rows[0]);
   } catch (error) {

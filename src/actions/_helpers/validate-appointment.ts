@@ -15,7 +15,7 @@ interface ValidateAppointmentParams {
   appointmentId?: string;
   clinicId: string;
   patientId: string;
-  doctorId: string;
+  doctorId?: string | null;
   date: Date;
   type: "consultation" | "procedure";
   procedureId?: string | null;
@@ -37,15 +37,18 @@ export async function validateAppointment({
         eq(patientsTable.clinicId, clinicId)
       ),
     }),
-    db.query.doctorsTable.findFirst({
-      where: and(
-        eq(doctorsTable.id, doctorId),
-        eq(doctorsTable.clinicId, clinicId)
-      ),
-    }),
+    doctorId
+      ? db.query.doctorsTable.findFirst({
+          where: and(
+            eq(doctorsTable.id, doctorId),
+            eq(doctorsTable.clinicId, clinicId)
+          ),
+        })
+      : Promise.resolve(undefined),
     procedureId
       ? db.query.proceduresTable.findFirst({
           where: and(eq(proceduresTable.id, procedureId), eq(proceduresTable.clinicId, clinicId), eq(proceduresTable.isActive, true)),
+          with: { proceduresToDoctors: true },
         })
       : Promise.resolve(undefined),
   ]);
@@ -54,11 +57,33 @@ export async function validateAppointment({
     throw new Error("Paciente não encontrado");
   }
 
-  if (!doctor) {
-    throw new Error("Médico não encontrado");
-  }
   if (type === "procedure" && !procedure) {
     throw new Error("Procedimento não encontrado ou inativo");
+  }
+  if (type === "consultation" && !doctor) {
+    throw new Error("Profissional é obrigatório para consultas");
+  }
+
+  if (type === "procedure" && procedure) {
+    const allowedDoctorIds = procedure.proceduresToDoctors.map(
+      (item) => item.doctorId
+    );
+    if (allowedDoctorIds.length === 0 && doctorId) {
+      throw new Error("Este procedimento não utiliza profissional");
+    }
+    if (allowedDoctorIds.length > 0 && !doctorId) {
+      throw new Error("Selecione um profissional para este procedimento");
+    }
+    if (doctorId && !allowedDoctorIds.includes(doctorId)) {
+      throw new Error("Profissional não habilitado para este procedimento");
+    }
+    if (doctorId && !doctor) {
+      throw new Error("Profissional não encontrado");
+    }
+  }
+
+  if (!doctor || !doctorId) {
+    return { doctor: null, patient, procedure };
   }
 
   const selectedDay = doctor.availableDays?.find(

@@ -11,7 +11,7 @@ import { AppointmentTableActions } from "./table-actions";
 
 interface TableColumnsProps {
   patients: AppointmentWithRelations["patient"][];
-  doctors: AppointmentWithRelations["doctor"][];
+  doctors: NonNullable<AppointmentWithRelations["doctor"]>[];
   procedures: NonNullable<AppointmentWithRelations["procedure"]>[];
 }
 
@@ -32,6 +32,7 @@ export const appointmentsTableColumns = ({
   {
     accessorKey: "doctor.name",
     header: "Médico",
+    cell: ({ row }) => row.original.doctor?.name ?? "Sem profissional",
   },
   {
     accessorKey: "date",
@@ -45,6 +46,7 @@ export const appointmentsTableColumns = ({
     id: "specialty",
     accessorKey: "doctor.specialty",
     header: "Especialidade",
+    cell: ({ row }) => row.original.doctor?.specialty ?? "-",
   },
   {
     accessorKey: "appointmentPriceInCents",

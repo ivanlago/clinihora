@@ -14,7 +14,7 @@ import { validateAppointment } from "../_helpers/validate-appointment";
 
 const createAppointmentSchema = z.object({
   patientId: z.string().min(1),
-  doctorId: z.string().min(1),
+  doctorId: z.string().uuid().nullable().optional(),
   date: z.date(),
   appointmentPriceInCents: z.number().min(1),
   type: z.enum(["consultation", "procedure"]),
@@ -52,7 +52,8 @@ export const createAppointment = actionClient
         date: parsedInput.date,
         type: parsedInput.type,
         procedureId: parsedInput.type === "procedure" ? parsedInput.procedureId : null,
-        appointmentPriceInCents: procedure?.priceInCents ?? doctor.appointmentPriceInCents,
+        appointmentPriceInCents:
+          procedure?.priceInCents ?? doctor!.appointmentPriceInCents,
       })
       .returning({
         id: appointmentsTable.id,

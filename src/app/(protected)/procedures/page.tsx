@@ -11,13 +11,12 @@ import {
   PageHeaderContent,
   PageTitle,
 } from "@/components/page-container";
-import { DataTable } from "@/components/ui/data-table";
 import { db } from "@/db";
-import { proceduresTable } from "@/db/schema";
+import { doctorsTable, proceduresTable } from "@/db/schema";
 import { auth } from "@/lib/auth";
 
 import { AddProcedureButton } from "./_components/add-procedure-button";
-import { proceduresTableColumns } from "./_components/table-columns";
+import { ProceduresTable } from "./_components/procedures-table";
 
 export default async function ProceduresPage() {
   const session = await auth.api.getSession({
@@ -39,7 +38,16 @@ export default async function ProceduresPage() {
   const procedures = await db.query.proceduresTable.findMany({
     where: eq(proceduresTable.clinicId, session.user.clinic.id),
     orderBy: (procedures, { asc }) => [asc(procedures.name)],
+    with: { proceduresToDoctors: true },
   });
+  const doctors = await db.query.doctorsTable.findMany({
+    where: eq(doctorsTable.clinicId, session.user.clinic.id),
+    orderBy: (doctors, { asc }) => [asc(doctors.name)],
+  });
+  const procedureRows = procedures.map((procedure) => ({
+    ...procedure,
+    doctorIds: procedure.proceduresToDoctors.map((item) => item.doctorId),
+  }));
 
   return (
     <PageContainer>
@@ -51,11 +59,11 @@ export default async function ProceduresPage() {
           </PageDescription>
         </PageHeaderContent>
         <PageActions>
-          <AddProcedureButton />
+          <AddProcedureButton doctors={doctors} />
         </PageActions>
       </PageHeader>
       <PageContent>
-        <DataTable columns={proceduresTableColumns} data={procedures} />
+        <ProceduresTable procedures={procedureRows} doctors={doctors} />
       </PageContent>
     </PageContainer>
   );

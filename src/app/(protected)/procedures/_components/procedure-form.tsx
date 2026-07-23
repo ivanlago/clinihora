@@ -41,7 +41,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { proceduresTable } from "@/db/schema";
+import { doctorsTable, proceduresTable } from "@/db/schema";
 
 const procedureSchema = z.object({
   id: z.string().uuid().optional(),
@@ -53,16 +53,18 @@ const procedureSchema = z.object({
     .int("Duração deve ser um número inteiro")
     .min(5, "Duração deve ser de pelo menos 5 minutos"),
   isActive: z.boolean(),
+  doctorIds: z.array(z.string().uuid()),
 });
 
 type ProcedureFormValues = z.infer<typeof procedureSchema>;
 
 interface ProcedureFormProps {
-  procedure?: typeof proceduresTable.$inferSelect;
+  procedure?: typeof proceduresTable.$inferSelect & { doctorIds?: string[] };
+  doctors: (typeof doctorsTable.$inferSelect)[];
   onSuccess?: () => void;
 }
 
-export function ProcedureForm({ procedure, onSuccess }: ProcedureFormProps) {
+export function ProcedureForm({ procedure, doctors, onSuccess }: ProcedureFormProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const form = useForm<ProcedureFormValues>({
@@ -75,6 +77,7 @@ export function ProcedureForm({ procedure, onSuccess }: ProcedureFormProps) {
         : 0,
       durationInMinutes: procedure?.durationInMinutes ?? 30,
       isActive: procedure?.isActive ?? true,
+      doctorIds: procedure?.doctorIds ?? [],
     },
   });
 
@@ -87,6 +90,7 @@ export function ProcedureForm({ procedure, onSuccess }: ProcedureFormProps) {
         : 0,
       durationInMinutes: procedure?.durationInMinutes ?? 30,
       isActive: procedure?.isActive ?? true,
+      doctorIds: procedure?.doctorIds ?? [],
     });
   }, [form, procedure]);
 
@@ -144,6 +148,46 @@ export function ProcedureForm({ procedure, onSuccess }: ProcedureFormProps) {
       </DialogHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="doctorIds"
+            render={({ field }) => (
+              <FormItem className="rounded-md border p-3">
+                <FormLabel>Profissionais habilitados</FormLabel>
+                <FormDescription>
+                  Se nenhum for marcado, o procedimento será agendado sem
+                  profissional.
+                </FormDescription>
+                <div className="mt-3 space-y-2">
+                  {doctors.map((doctor) => (
+                    <label
+                      key={doctor.id}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <Checkbox
+                        checked={field.value.includes(doctor.id)}
+                        onCheckedChange={(checked) =>
+                          field.onChange(
+                            checked
+                              ? [...field.value, doctor.id]
+                              : field.value.filter((id) => id !== doctor.id)
+                          )
+                        }
+                      />
+                      {doctor.name}
+                    </label>
+                  ))}
+                  {!doctors.length && (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum profissional cadastrado.
+                    </p>
+                  )}
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="name"

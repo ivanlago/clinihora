@@ -26,9 +26,25 @@ export const GET = async (request: NextRequest) => {
         priceInCents: true,
         durationInMinutes: true,
       },
+      with: {
+        proceduresToDoctors: {
+          with: { doctor: true },
+        },
+      },
     });
 
-    return NextResponse.json({ procedures });
+    return NextResponse.json({
+      procedures: procedures.map((procedure) => ({
+        ...procedure,
+        requiresProfessional: procedure.proceduresToDoctors.length > 0,
+        professionals: procedure.proceduresToDoctors.map(({ doctor }) => ({
+          id: doctor.id,
+          name: doctor.name,
+          specialty: doctor.specialty,
+        })),
+        proceduresToDoctors: undefined,
+      })),
+    });
   } catch (error) {
     return handleN8nApiError(error);
   }

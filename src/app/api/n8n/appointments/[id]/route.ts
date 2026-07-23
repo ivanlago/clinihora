@@ -15,7 +15,7 @@ import { handleN8nApiError, requireN8nClinicAuth } from "@/lib/n8n-api";
 
 const updateAppointmentSchema = z.object({
   patientId: z.string().uuid().optional(),
-  doctorId: z.string().uuid().optional(),
+  doctorId: z.string().uuid().nullable().optional(),
   date: z.string().datetime({ offset: true }).optional(),
 });
 
@@ -44,7 +44,8 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
     }
 
     const patientId = input.patientId ?? appointment.patientId;
-    const doctorId = input.doctorId ?? appointment.doctorId;
+    const doctorId =
+      input.doctorId !== undefined ? input.doctorId : appointment.doctorId;
     const date = input.date ? new Date(input.date) : appointment.date;
     const { doctor, patient, procedure } = await validateAppointment({
       appointmentId: appointment.id,
@@ -56,10 +57,10 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
       procedureId: appointment.procedureId,
     });
 
-    if (appointment.doctorId !== doctorId) {
+    if (appointment.doctorId !== doctorId && appointment.doctorId) {
       await deleteAppointmentFromGoogleCalendar({
         appointmentId: appointment.id,
-        doctorId: appointment.doctorId,
+          doctorId: appointment.doctorId,
         eventId: appointment.googleCalendarEventId,
         calendarId: appointment.googleCalendarId,
       });
@@ -72,7 +73,7 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
         doctorId,
         date,
         appointmentPriceInCents:
-          procedure?.priceInCents ?? doctor.appointmentPriceInCents,
+          procedure?.priceInCents ?? doctor!.appointmentPriceInCents,
         updatedAt: new Date(),
       })
       .where(eq(appointmentsTable.id, appointment.id))
@@ -98,17 +99,17 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
           email: patient.email,
           message:
             appointment.type === "procedure"
-              ? `Procedimento ${procedure?.name} remarcado com ${doctor.name} para ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`
-              : `Consulta remarcada com ${doctor.name} para ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`,
+              ? `Procedimento ${procedure?.name}${doctor ? ` remarcado com ${doctor.name}` : " remarcado"} para ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`
+              : `Consulta remarcada com ${doctor!.name} para ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`,
         },
-        doctor: {
+        doctor: doctor ? {
           phone: doctor.phone,
           email: doctor.email,
           message:
             appointment.type === "procedure"
               ? `Procedimento ${procedure?.name} de ${patient.name} remarcado para ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`
               : `Consulta de ${patient.name} remarcada para ${clinicTime(date).format("DD/MM/YYYY [às] HH:mm")}.`,
-        },
+        } : null,
       },
     });
   } catch (error) {
@@ -138,12 +139,14 @@ export const DELETE = async (request: NextRequest, { params }: Params) => {
       throw new Error("Agendamento não encontrado");
     }
 
-    await deleteAppointmentFromGoogleCalendar({
-      appointmentId: appointment.id,
-      doctorId: appointment.doctorId,
-      eventId: appointment.googleCalendarEventId,
-      calendarId: appointment.googleCalendarId,
-    });
+    if (appointment.doctorId) {
+      await deleteAppointmentFromGoogleCalendar({
+        appointmentId: appointment.id,
+        doctorId: appointment.doctorId,
+        eventId: appointment.googleCalendarEventId,
+        calendarId: appointment.googleCalendarId,
+      });
+    }
 
     await db.delete(appointmentsTable).where(eq(appointmentsTable.id, id));
 
@@ -158,17 +161,17 @@ export const DELETE = async (request: NextRequest, { params }: Params) => {
           email: appointment.patient.email,
           message:
             appointment.type === "procedure"
-              ? `Procedimento ${appointment.procedure?.name} com ${appointment.doctor.name} em ${clinicTime(appointment.date).format("DD/MM/YYYY [às] HH:mm")} cancelado.`
-              : `Consulta com ${appointment.doctor.name} em ${clinicTime(appointment.date).format("DD/MM/YYYY [às] HH:mm")} cancelada.`,
+              ? `Procedimento ${appointment.procedure?.name}${appointment.doctor ? ` com ${appointment.doctor.name}` : ""} em ${clinicTime(appointment.date).format("DD/MM/YYYY [às] HH:mm")} cancelado.`
+              : `Consulta com ${appointment.doctor!.name} em ${clinicTime(appointment.date).format("DD/MM/YYYY [às] HH:mm")} cancelada.`,
         },
-        doctor: {
+        doctor: appointment.doctor ? {
           phone: appointment.doctor.phone,
           email: appointment.doctor.email,
           message:
             appointment.type === "procedure"
               ? `Procedimento ${appointment.procedure?.name} de ${appointment.patient.name} em ${clinicTime(appointment.date).format("DD/MM/YYYY [às] HH:mm")} cancelado.`
               : `Consulta de ${appointment.patient.name} em ${clinicTime(appointment.date).format("DD/MM/YYYY [às] HH:mm")} cancelada.`,
-        },
+        } : null,
       },
     });
   } catch (error) {

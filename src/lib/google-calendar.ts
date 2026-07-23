@@ -39,7 +39,7 @@ type AppointmentWithRelations = typeof appointmentsTable.$inferSelect & {
     name: string;
     email: string | null;
     specialty: string;
-  };
+  } | null;
   procedure: {
     name: string;
     durationInMinutes: number;
@@ -209,6 +209,9 @@ const getAppointmentEventPayload = (appointment: AppointmentWithRelations) => {
   const endDate = dayjs(startDate).add(duration, "minute");
   const patient = appointment.patient;
   const doctor = appointment.doctor;
+  if (!doctor) {
+    throw new Error("Agendamento sem profissional não gera evento no Google");
+  }
 
   return {
     summary:
@@ -318,6 +321,16 @@ export const syncAppointmentToGoogleCalendar = async ({
   });
 
   if (!appointment) return;
+  if (!appointment.doctorId || !appointment.doctor) {
+    await updateAppointmentGoogleSyncStatus({
+      appointmentId,
+      eventId: null,
+      calendarId: null,
+      status: "not_connected",
+      error: null,
+    });
+    return;
+  }
 
   const account = await db.query.doctorGoogleCalendarAccountsTable.findFirst({
     where: eq(doctorGoogleCalendarAccountsTable.doctorId, appointment.doctorId),

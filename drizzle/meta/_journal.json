@@ -50,6 +50,13 @@
       "when": 1783733774204,
       "tag": "0006_sad_doctor_doom",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1784783999801,
+      "tag": "0007_glamorous_nightshade",
+      "breakpoints": true
     }
   ]
 }

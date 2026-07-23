@@ -55,7 +55,12 @@ export default async function AppointmentsPage() {
   });
   const procedures = await db.query.proceduresTable.findMany({
     where: eq(proceduresTable.clinicId, session.user.clinic.id),
+    with: { proceduresToDoctors: true },
   });
+  const procedureOptions = procedures.map((procedure) => ({
+    ...procedure,
+    doctorIds: procedure.proceduresToDoctors.map((item) => item.doctorId),
+  }));
 
   return (
     <PageContainer>
@@ -67,7 +72,7 @@ export default async function AppointmentsPage() {
           </PageDescription>
         </PageHeaderContent>
         <PageActions>
-          <AddAppointmentButton patients={patients} doctors={doctors} procedures={procedures} />
+          <AddAppointmentButton patients={patients} doctors={doctors} procedures={procedureOptions} />
         </PageActions>
       </PageHeader>
       <PageContent>
@@ -75,7 +80,7 @@ export default async function AppointmentsPage() {
           appointments={appointments}
           patients={patients}
           doctors={doctors}
-          procedures={procedures}
+          procedures={procedureOptions}
         />
       </PageContent>
     </PageContainer>

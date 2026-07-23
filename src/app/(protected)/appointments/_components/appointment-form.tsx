@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form";
 import { NumericFormat } from "react-number-format";
 import { z } from "zod";
 
+import { generateTimeSlots } from "@/_helpers/time";
 import { getAvailableTimes } from "@/actions/get-available-times";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -41,7 +42,7 @@ import { Doctor, Patient, Procedure } from "../types";
 const appointmentFormSchema = z.object({
   id: z.string().uuid().optional(),
   patientId: z.string().min(1, "Selecione um paciente"),
-  doctorId: z.string().min(1, "Selecione um médico"),
+  doctorId: z.string().uuid().nullable().optional(),
   date: z.date({
     required_error: "Selecione uma data",
   }),
@@ -49,6 +50,14 @@ const appointmentFormSchema = z.object({
   appointmentPriceInCents: z.number().min(1, "Valor inválido"),
   type: z.enum(["consultation", "procedure"]),
   procedureId: z.string().uuid().nullable().optional(),
+}).superRefine((input, context) => {
+  if (input.type === "consultation" && !input.doctorId) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["doctorId"],
+      message: "Selecione um profissional",
+    });
+  }
 });
 
 type AppointmentFormValues = z.infer<typeof appointmentFormSchema>;
@@ -89,6 +98,19 @@ export function AppointmentForm({
   const selectedType = form.watch("type");
   const selectedDate = form.watch("date");
   const selectedProcedureId = form.watch("procedureId");
+  const selectedProcedure = procedures.find(
+    (procedure) => procedure.id === selectedProcedureId
+  );
+  const eligibleDoctors =
+    selectedType === "procedure"
+      ? doctors.filter((doctor) =>
+          selectedProcedure?.doctorIds?.includes(doctor.id)
+        )
+      : doctors;
+  const procedureWithoutProfessional =
+    selectedType === "procedure" &&
+    !!selectedProcedure &&
+    (selectedProcedure.doctorIds?.length ?? 0) === 0;
 
   const { data: availableTimes } = useQuery({
     queryKey: [
@@ -100,12 +122,19 @@ export function AppointmentForm({
     queryFn: () =>
       getAvailableTimes({
         date: dayjs(selectedDate).format("YYYY-MM-DD"),
-        doctorId: selectedDoctorId,
+        doctorId: selectedDoctorId!,
         procedureId:
           selectedType === "procedure" ? selectedProcedureId : undefined,
       }),
     enabled: !!selectedDate && !!selectedDoctorId,
   });
+  const displayedTimes = procedureWithoutProfessional
+    ? generateTimeSlots().map((time) => ({
+        value: time,
+        label: time.substring(0, 5),
+        available: true,
+      }))
+    : availableTimes?.data;
 
   const handleSubmit = async (values: AppointmentFormValues) => {
     // Combine date and time into a single datetime
@@ -120,6 +149,7 @@ export function AppointmentForm({
   };
 
   const isDateAvailable = (date: Date) => {
+    if (procedureWithoutProfessional) return true;
     if (!selectedDoctorId) return false;
     const selectedDoctor = doctors.find(
       (doctor) => doctor.id === selectedDoctorId
@@ -140,6 +170,7 @@ export function AppointmentForm({
           <FormItem><FormLabel>Tipo de agendamento</FormLabel>
             <Select value={field.value} onValueChange={(value: "consultation" | "procedure") => {
               field.onChange(value); form.setValue("procedureId", null);
+              form.setValue("doctorId", null);
               const doctor = doctors.find((item) => item.id === form.getValues("doctorId"));
               form.setValue("appointmentPriceInCents", value === "consultation" ? doctor?.appointmentPriceInCents ?? 0 : 0);
             }}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="consultation">Consulta</SelectItem><SelectItem value="procedure">Procedimento</SelectItem></SelectContent></Select><FormMessage />
@@ -148,7 +179,7 @@ export function AppointmentForm({
 
         {selectedType === "procedure" && <FormField control={form.control} name="procedureId" render={({ field }) => (
           <FormItem><FormLabel>Procedimento</FormLabel>
-            <Select value={field.value ?? undefined} onValueChange={(value) => { field.onChange(value); const procedure = procedures.find((item) => item.id === value); if (procedure) form.setValue("appointmentPriceInCents", procedure.priceInCents); }}><FormControl><SelectTrigger><SelectValue placeholder="Selecione um procedimento" /></SelectTrigger></FormControl><SelectContent>{procedures.filter((item) => item.isActive).map((procedure) => <SelectItem key={procedure.id} value={procedure.id}>{procedure.name}</SelectItem>)}</SelectContent></Select><FormMessage />
+            <Select value={field.value ?? undefined} onValueChange={(value) => { field.onChange(value); form.setValue("doctorId", null); form.setValue("time", ""); const procedure = procedures.find((item) => item.id === value); if (procedure) form.setValue("appointmentPriceInCents", procedure.priceInCents); }}><FormControl><SelectTrigger><SelectValue placeholder="Selecione um procedimento" /></SelectTrigger></FormControl><SelectContent>{procedures.filter((item) => item.isActive).map((procedure) => <SelectItem key={procedure.id} value={procedure.id}>{procedure.name}</SelectItem>)}</SelectContent></Select><FormMessage />
           </FormItem>
         )} />}
         <FormField
@@ -181,7 +212,7 @@ export function AppointmentForm({
           name="doctorId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Médico</FormLabel>
+              <FormLabel>Profissional</FormLabel>
               <Select
                 onValueChange={(value) => {
                   field.onChange(value);
@@ -193,15 +224,25 @@ export function AppointmentForm({
                     );
                   }
                 }}
-                defaultValue={field.value}
+                value={field.value ?? undefined}
+                disabled={
+                  selectedType === "procedure" &&
+                  (!selectedProcedure || procedureWithoutProfessional)
+                }
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um médico" />
+                    <SelectValue
+                      placeholder={
+                        procedureWithoutProfessional
+                          ? "Procedimento sem profissional"
+                          : "Selecione um profissional"
+                      }
+                    />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {doctors.map((doctor) => (
+                  {eligibleDoctors.map((doctor) => (
                     <SelectItem key={doctor.id} value={doctor.id}>
                       {doctor.name}
                     </SelectItem>
@@ -257,7 +298,10 @@ export function AppointmentForm({
                           "w-full pl-3 text-left font-normal",
                           !field.value && "text-muted-foreground"
                         )}
-                        disabled={!selectedDoctorId || !form.watch("patientId")}
+                        disabled={
+                          (!selectedDoctorId && !procedureWithoutProfessional) ||
+                          !form.watch("patientId")
+                        }
                       >
                         {field.value ? (
                           format(field.value, "PPP", { locale: ptBR })
@@ -302,7 +346,7 @@ export function AppointmentForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {availableTimes?.data?.map((time) => (
+                    {displayedTimes?.map((time) => (
                       <SelectItem
                         key={time.value}
                         value={time.value}

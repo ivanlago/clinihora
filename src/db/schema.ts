@@ -6,6 +6,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uuid,
@@ -118,6 +119,7 @@ export const clinicsTableRelations = relations(clinicsTable, ({ many }) => ({
   doctors: many(doctorsTable),
   patients: many(patientsTable),
   procedures: many(proceduresTable),
+  proceduresToDoctors: many(proceduresToDoctorsTable),
   appointments: many(appointmentsTable),
   medicalRecords: many(medicalRecordsTable),
   usersToClinics: many(usersToClinicsTable),
@@ -153,6 +155,7 @@ export const doctorsTableRelations = relations(
       references: [clinicsTable.id],
     }),
     appointments: many(appointmentsTable),
+    proceduresToDoctors: many(proceduresToDoctorsTable),
     medicalRecords: many(medicalRecordsTable),
     googleCalendarAccount: one(doctorGoogleCalendarAccountsTable),
   })
@@ -241,7 +244,43 @@ export const proceduresTableRelations = relations(proceduresTable, ({ many, one 
     references: [clinicsTable.id],
   }),
   appointments: many(appointmentsTable),
+  proceduresToDoctors: many(proceduresToDoctorsTable),
 }));
+
+export const proceduresToDoctorsTable = pgTable(
+  "procedures_to_doctors",
+  {
+    procedureId: uuid("procedure_id")
+      .notNull()
+      .references(() => proceduresTable.id, { onDelete: "cascade" }),
+    doctorId: uuid("doctor_id")
+      .notNull()
+      .references(() => doctorsTable.id, { onDelete: "cascade" }),
+    clinicId: uuid("clinic_id")
+      .notNull()
+      .references(() => clinicsTable.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.procedureId, table.doctorId] })]
+);
+
+export const proceduresToDoctorsTableRelations = relations(
+  proceduresToDoctorsTable,
+  ({ one }) => ({
+    procedure: one(proceduresTable, {
+      fields: [proceduresToDoctorsTable.procedureId],
+      references: [proceduresTable.id],
+    }),
+    doctor: one(doctorsTable, {
+      fields: [proceduresToDoctorsTable.doctorId],
+      references: [doctorsTable.id],
+    }),
+    clinic: one(clinicsTable, {
+      fields: [proceduresToDoctorsTable.clinicId],
+      references: [clinicsTable.id],
+    }),
+  })
+);
 
 export const appointmentTypeEnum = pgEnum("appointment_type", [
   "consultation",
@@ -253,9 +292,9 @@ export const appointmentsTable = pgTable("appointments", {
   patientId: uuid("patient_id")
     .notNull()
     .references(() => patientsTable.id, { onDelete: "cascade" }),
-  doctorId: uuid("doctor_id")
-    .notNull()
-    .references(() => doctorsTable.id, { onDelete: "cascade" }),
+  doctorId: uuid("doctor_id").references(() => doctorsTable.id, {
+    onDelete: "set null",
+  }),
   procedureId: uuid("procedure_id").references(() => proceduresTable.id, {
     onDelete: "restrict",
   }),

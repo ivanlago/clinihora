@@ -5,10 +5,15 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { doctorsTable } from "@/db/schema";
 
 import { ProcedureForm } from "./procedure-form";
 
-export function AddProcedureButton() {
+export function AddProcedureButton({
+  doctors,
+}: {
+  doctors: (typeof doctorsTable.$inferSelect)[];
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -18,7 +23,9 @@ export function AddProcedureButton() {
           <PlusIcon /> Novo Procedimento
         </Button>
       </DialogTrigger>
-      {open && <ProcedureForm onSuccess={() => setOpen(false)} />}
+      {open && (
+        <ProcedureForm doctors={doctors} onSuccess={() => setOpen(false)} />
+      )}
     </Dialog>
   );
 }
